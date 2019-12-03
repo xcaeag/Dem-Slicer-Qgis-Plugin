@@ -12,8 +12,8 @@ email=xavier.culos@gmail.com
 
 about=It is a simple tool for cutting (in slices) of DEM, to draw pretty postcards, for the lovers of reliefs.
 
-tracker=https://github.com/xcaeag
-repository=https://github.com/xcaeag
+tracker=https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/issues
+repository=https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin
 # End of mandatory metadata
 
 # Recommended items:
@@ -25,7 +25,7 @@ changelog=0.1 beginnings
 # Tags are comma separated with spaces allowed
 tags=vector, topography, profile, polyline, dem, mnt
 
-homepage=https://github.com/xcaeag
+homepage=https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin
 category=Raster
 icon=icon.png
 # experimental flag
