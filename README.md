@@ -17,19 +17,19 @@ Les décalages (variés selon les paramètres retenus) en hauteur de chaque coup
 ### Un fonctionnement basique. 
 Choix de la zone (utilisation des poignées), sélection de la couche qui porte les altitudes, ajustement de quelques paramètres et résultats  : 
 
-![ex1](dem-demo-1.gif)
+![Démo simple](dem-demo-1.gif)
 
 ### La vue 'panoramique' :
 Les tranches de terrain suivent alors des arcs de cercle d'iso-distance à l'observateur.
 
-![ex1](dem-demo-2.gif)
+![Vue panoramique](dem-demo-2.gif)
 
 ### Ornementations...
 
 La couche de points choisie sera 'projetée' sur les coupes. Un attribut indique si le point ainsi projeté est visible (masqué ou non par une coupe). Le style par défaut utilise les champs 'nom', 'name' ou 'label' pour étiquetage.
 Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet replacé en altitude. Résultat souvent mal fichu et très gourmant. Attention : annulation impossible, faire des tests sur petit jeu de données.
 
-![ex1](dem-demo-3.gif)
+![P.O.I.](dem-demo-3.gif)
 
 ## Les couches produites 
 
@@ -38,14 +38,14 @@ Attributs :
 
     "num" - numéro de la ligne. Le zéro commençant au fond.
 
-![ex1](ex_line.png)
+![layer line](ex_line.png)
 
 ### Polygones 
 Attributs : 
 
     "num" - numéro du polygone. Le zéro commençant au fond.
 
-![ex1](ex_poly.png)
+![layer polygon](ex_poly.png)
 
 ### Crêtes
 Attributs : 
@@ -54,7 +54,7 @@ Attributs :
     "gaz" - nombre de coupes que cette crête masque.  
     "prof" - 'profondeur' de la crête (0 = proche...)
 
-![ex1](ex_ridge.png)
+![layer ridge](ex_ridge.png)
 
 ### Ornementation (points)
 Attributs (ajoutés aux attributs de la couche originale) : 
@@ -64,30 +64,35 @@ Attributs (ajoutés aux attributs de la couche originale) :
     "depth" - distance à l'observateur
     "visi" - visibilité dans la série de coupe (0 : masqué, 1 : visible)
 
-![ex1](ex_ornement.png)
+![layer POI](ex_ornement.png)
 
 ## Les paramètres en détail
 
 linecount : c'est tout simplement le nombre de profils (de coupes) générés.
+
 ![linecount](dem-demo-linecount.gif)
 
 xStep : distance entre deux mesures d'altitude, le long des profils. 
+
 ![xstep](dem-demo-xstep.gif)
 
 zShift : décalage vertical des coupes. Rend plus visible les coupes qui sont en arrière plan. Effet 'vue aérienne'.
+
 ![zshift](dem-demo-zshift.gif)
 
 zFactor : Exagération du relief.
+
 ![zfactor](dem-demo-zfactor.gif)
 
 elevation : Altitude de l'observateur par rapport au sol. Comme 'zShift', influe sur le décalage vertical des coupes, en plus fidèle à la réalité. 
+
 ![elevation](dem-demo-elevation.gif)
 
 ## Les styles... 
 
-![ex1](ex_line.png)
+![style line](ex_line.png)
 
-![ex1](ex_polygon.png)
+![style polygon](ex_polygon.png)
 
 
 
