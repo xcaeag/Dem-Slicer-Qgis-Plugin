@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/dem_slicer" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>

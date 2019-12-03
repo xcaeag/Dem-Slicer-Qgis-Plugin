@@ -1,0 +1,44 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=D.E.M. Slicer
+qgisMinimumVersion=3.10
+description=D.E.M. slicer, an 'artistic' relief cutting tool
+version=0.1
+author=xc
+email=xavier.culos@gmail.com
+
+about=It is a simple tool for cutting (in slices) of DEM, to draw pretty postcards, for the lovers of reliefs.
+
+tracker=https://github.com/xcaeag
+repository=https://github.com/xcaeag
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+changelog=0.1 beginnings
+
+# Tags are comma separated with spaces allowed
+tags=vector, topography, profile, polyline, dem, mnt
+
+homepage=https://github.com/xcaeag
+category=Raster
+icon=icon.png
+# experimental flag
+experimental=True
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+# If the plugin can run on QGIS Server.
+server=False
+
