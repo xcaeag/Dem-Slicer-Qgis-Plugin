@@ -10,7 +10,7 @@ Les décalages (variés selon les paramètres retenus) en hauteur de chaque coup
 
 ## Les prérequis
 - disposer d'un image (raster) d'altitude (MNT). différentes sources possibles : https://dwtkns.com/srtm30m/, https://opendem.info, https://grindgis.com/data/free-world-dem-data
-- de travailler dans une projection dont l'unité coincide avec l'unité altimétrique du MNT (le mètre par exemple pour la projection Lambert93). 
+- de travailler dans une projection dont l'unité coïncide avec l'unité altimétrique du MNT (le mètre par exemple pour la projection Lambert93). 
 
 ## Exemples
 
