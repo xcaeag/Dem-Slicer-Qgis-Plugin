@@ -36,9 +36,7 @@ TODO :
 - travailler la visibilité des linéaires
 - données DEM en ligne (IGN, Bing Maps) https://geoservices.ign.fr/documentation/geoservices/alti.html
 - traduction
-- alerte trop grand nombre de points
 - alerte projections
-- supporter plusieurs couches raster
 - doc
 - export azimuths
 - tester différentes projections
@@ -46,7 +44,6 @@ TODO :
 - attributs en float
 - preview faculatif
 - + verticales dans la preview
-- soustraire altitude obs au résultat final
 """
 
 import os
@@ -665,6 +662,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     QgsProject.instance().addMapLayer(layer)
                     layer.startEditing()
                     layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("z", QVariant.Int), QgsField("depth", QVariant.Int), QgsField("visi", QVariant.Int)])
+                    layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
                     layer.updateFields()
 
                     layer.dataProvider().addFeatures(feats)
@@ -724,6 +722,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     QgsProject.instance().addMapLayer(layer)
                     layer.startEditing()
                     layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("visi", QVariant.Int), QgsField("depth", QVariant.Int)])
+                    layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
                     layer.updateFields()
 
                     layer.dataProvider().addFeatures(feats)
@@ -780,6 +779,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     QgsProject.instance().addMapLayer(layer)
                     layer.startEditing()
                     layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("visi", QVariant.Int), QgsField("depth", QVariant.Int)])
+                    layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
                     layer.updateFields()
 
                     layer.dataProvider().addFeatures(feats)
