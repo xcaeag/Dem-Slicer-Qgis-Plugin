@@ -3,7 +3,7 @@
 <context>
     <name>@default</name>
     <message>
-        <source>DEM Layer</source>
+        <source>DEM layer</source>
         <translation>Couche MNT</translation>
     </message>
     <message>
