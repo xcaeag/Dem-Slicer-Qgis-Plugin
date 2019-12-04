@@ -1,6 +1,6 @@
 # D.E.M. Slicer
 
-![ex1](help/ex_poi.png)
+![ex1](help/all.png)
 
 Il s'agit d'un outil simple de découpe (en tranches !) de MNT, pour dessiner de jolies cartes postales, pour les amoureux de reliefs. 
 
