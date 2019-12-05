@@ -192,7 +192,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         z = self.elevation.value()
         dd = self.mt.zoneDepth / (self.lineCount.value()-1)
         dist = self.mt.d0 + depth
-        ixL = depth / dd
+        ixL = round(depth / dd)
         # alpha = math.atan(z/dist)
         dh = depth * (z/dist)  # math.tan(alpha)
         return dh + ixL*self.zShift.value(), ixL  # profondeur
