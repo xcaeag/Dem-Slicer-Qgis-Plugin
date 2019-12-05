@@ -33,17 +33,11 @@ list(v)[0]
 
 TODO :
 - passe-t-on par geom is collection ?
-- travailler la visibilité des linéaires
-- données DEM en ligne (IGN, Bing Maps) https://geoservices.ign.fr/documentation/geoservices/alti.html
 - traduction
 - alerte projections
-- doc
-- export azimuths
 - tester différentes projections
 - choix de styles
 - attributs en float
-- preview faculatif
-- + verticales dans la preview
 """
 
 import os
@@ -654,7 +648,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     layer = QgsVectorLayer("MultiPoint?crs={}".format(QgsProject.instance().crs().authid()), "P.O.I.", "memory")
                     QgsProject.instance().addMapLayer(layer)
                     layer.startEditing()
-                    layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("prof", QVariant.Int), QgsField("z", QVariant.Int), QgsField("depth", QVariant.Int), QgsField("visi", QVariant.Int), QgsField("azimuth", QVariant.Double, 'double', 4, 1)])
+                    layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("prof", QVariant.Int), QgsField("z", QVariant.Int), QgsField("depth", QVariant.Double, 'double', 4, 1), QgsField("visi", QVariant.Int), QgsField("azimuth", QVariant.Double, 'double', 4, 1)])
                     layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
                     layer.updateFields()
 
@@ -771,7 +765,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     layer = QgsVectorLayer("Polygon?crs={}".format(QgsProject.instance().crs().authid()), "PROJ.", "memory")
                     QgsProject.instance().addMapLayer(layer)
                     layer.startEditing()
-                    layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("visi", QVariant.Int), QgsField("depth", QVariant.Int)])
+                    layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("visi", QVariant.Int), QgsField("prof", QVariant.Int)])
                     layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
                     layer.updateFields()
 
