@@ -626,24 +626,15 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         z = self.getElevation(self.xMap2Raster.transform(poiPointXY.x(), poiPointXY.y()))-self.altY
                         # reprojeter les points
                         prof = 0
+                        azimuth = 0
                         depth = self.mt.pY.distance(poiPointXY)-self.mt.d0
                         if self.parallelView.isChecked():
-                            # d = segAD.distance(QgsGeometry.fromPointXY(poiPointXY))
-                            # prof = segCD.distance(QgsGeometry.fromPointXY(poiPointXY))/dy
                             newX = self.mt.pR.x()+segAD.distance(QgsGeometry.fromPointXY(poiPointXY))
                             zs, prof = self.getZShift(depth)
                             newY = self.mt.pR.y()+zs + z*self.zFactor.value()
                         else:
-                            # d = self.mt.pY.distance(poiPointXY)  # QgsGeometry.fromPointXY(poiPointXY))
-                            az = self.mt.pY.azimuth(poiPointXY)
-                            # p1 = self.mt.pM
-                            # p2 = self.mt.pH
-                            # d1 = self.mt.pY.distance(p1)
-                            # d2 = self.mt.pY.distance(p2)
-                            # prof = len(polylineIn) * ((d-d1)/(d2-d1))
-
-                            if aD > az:
-                                az = az + 360
+                            azimuth = self.mt.pY.azimuth(poiPointXY)
+                            az = azimuth + 360 if aD > azimuth else azimuth
                             fx = (az-aD)/angleVue
                             newX = self.mt.pR.x() + fx*self.mt.zoneWidth
                             zs, prof = self.getZShift(depth)
@@ -652,7 +643,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         pt = QgsGeometry.fromPointXY(QgsPointXY(newX, newY))
                         visi = self.getVisibility(pt, aPolys, prof)
                         fet0 = QgsFeature(fid)
-                        fet0.setAttributes(feat.attributes()+[str(fid), z, depth, visi])
+                        fet0.setAttributes(feat.attributes()+[str(fid), prof, z, depth, visi, azimuth])
                         fid = fid + 1
                         fet0.setGeometry(pt)
                         feats.append(fet0)
@@ -661,7 +652,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     layer = QgsVectorLayer("MultiPoint?crs={}".format(QgsProject.instance().crs().authid()), "P.O.I.", "memory")
                     QgsProject.instance().addMapLayer(layer)
                     layer.startEditing()
-                    layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("z", QVariant.Int), QgsField("depth", QVariant.Int), QgsField("visi", QVariant.Int)])
+                    layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("prof", QVariant.Int), QgsField("z", QVariant.Int), QgsField("depth", QVariant.Int), QgsField("visi", QVariant.Int), QgsField("azimuth", QVariant.Double, 'double', 4, 1)])
                     layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
                     layer.updateFields()
 
@@ -721,7 +712,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     layer = QgsVectorLayer("MultiLineString?crs={}".format(QgsProject.instance().crs().authid()), "PROJ.", "memory")
                     QgsProject.instance().addMapLayer(layer)
                     layer.startEditing()
-                    layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("visi", QVariant.Int), QgsField("depth", QVariant.Int)])
+                    layer.dataProvider().addAttributes(poiLayer.dataProvider().fields().toList() + [QgsField("num", QVariant.Int), QgsField("visi", QVariant.Int), QgsField("prof", QVariant.Int)])
                     layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
                     layer.updateFields()
 
