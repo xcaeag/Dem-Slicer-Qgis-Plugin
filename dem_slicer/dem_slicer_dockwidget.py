@@ -280,8 +280,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         for lineIn, lineOut in zip(polylineIn, polylineOut):
             xs, ys, zs = map(list, zip(*[(point.x(), point.y(), self.getElevation(self.xMap2Raster.transform(point.x(), point.y()))-self.altY) for point in lineIn]))
 
+            zf = self.zFactor.value()
             for z, point in zip(zs, lineOut):
-                point.setY(point.y()+z*self.zFactor.value())
+                point.setY(point.y() + z*zf)
 
             lineOut.append(QgsPointXY(xmax, ymin-2*self.zShift.value()-self.altY))
             lineOut.append(QgsPointXY(xmin, ymin-2*self.zShift.value()-self.altY))
@@ -295,8 +296,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             segAD = QgsGeometry.fromPolylineXY([self.mt.pA, self.mt.pD])
             prof1 = 0
             for i, pt in enumerate(polyline):
-                z = self.zFactor.value()*(self.getElevation(self.xMap2Raster.transform(pt.x(), pt.y()))-self.altY)
-
+                z = (self.getElevation(self.xMap2Raster.transform(pt.x(), pt.y()))-self.altY)*self.zFactor.value()
                 if self.parallelView.isChecked():
                     newX = self.mt.pR.x()+segAD.distance(QgsGeometry.fromPointXY(pt))
                     zs, prof = self.getZShift(self.mt.pY.distance(pt)-self.mt.d0)
@@ -408,13 +408,15 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.progressBar.setMaximum(len(polylineIn) + (len(polylineIn) * self.renderLines.isChecked()) + (len(polylineIn) * self.renderPolygons.isChecked()) + (2*len(polylineIn) * self.renderRidges.isChecked()))
         aLines = []
         aPolys = []
+        zf = self.zFactor.value()
+
         for lineIn, lineOut in zip(polylineIn, polylineOut):
             self.progressBar.setValue(progess)
             progess = progess + 1
             xs, ys, zs = map(list, zip(*[(point.x(), point.y(), self.getElevation(self.xMap2Raster.transform(point.x(), point.y()))-self.altY) for point in lineIn]))
 
             for z, point in zip(zs, lineOut):
-                point.setY(point.y()+z*self.zFactor.value())
+                point.setY(point.y()+z*zf)
 
                 """if self.renderPoints.isChecked():
                     pt = QgsGeometry.fromPointXY(point)
