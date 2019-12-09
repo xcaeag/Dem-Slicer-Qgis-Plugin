@@ -32,6 +32,7 @@ v = mntLayer.dataProvider().identify(QgsPointXY(457881,6187641), QgsRaster.Ident
 list(v)[0]
 
 TODO :
+- mode pano : pb exagération en z dans le lointain
 - passe-t-on par geom is collection ?
 - traduction
 - alerte projections
@@ -160,6 +161,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         try:
             v = self.mntLayer.dataProvider().identify(point, QgsRaster.IdentifyFormatValue).results().values()
             return int(list(v)[0])
+            # v, ok = self.mntLayer.dataProvider().sample(point, 0)
+            # return v if ok else 0
         except:
             return 0
 
@@ -173,11 +176,15 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         return None
 
     def getVisibility(self, pt, polys, prof):
+        visi = 1
         for i, p in enumerate(polys[::-1]):
-            if i < prof-1 and p.contains(pt):
-                return 0
+            if prof > i and p.contains(pt):
+                visi = visi-1
 
-        return 1
+            if visi <= -10:
+                break
+
+        return visi
 
     def getZShift(self, depth):
         """
@@ -837,7 +844,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def on_btnSave_released(self):
         fileName, _ = QFileDialog.getSaveFileName(self, self.tr("Save parameters"), "", self.tr("Ini files (*.ini)"))
         if fileName:
-            self.log("Save")
             s = QSettings(fileName, QSettings.IniFormat)
             s.setValue("dem_slicer/Ax", self.mt.pA.x())
             s.setValue("dem_slicer/Ay", self.mt.pA.y())
@@ -1139,9 +1145,9 @@ class MapTool(QgsMapTool):
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             format_exception = traceback.format_exception(exc_type, exc_value, exc_traceback)
-            self.log(repr(format_exception[0]))
-            self.log(repr(format_exception[1]))
-            self.log(repr(format_exception[2]))
+            self.widget.log(repr(format_exception[0]))
+            self.widget.log(repr(format_exception[1]))
+            self.widget.log(repr(format_exception[2]))
 
         nbPoints = int(len(polyline)*(self.zoneWidth / self.widget.xStep.value()))
         alert = ''
