@@ -31,6 +31,9 @@ mntLayer = QgsProject.instance().mapLayersByName("srtm_pyr")[0]
 v = mntLayer.dataProvider().identify(QgsPointXY(457881,6187641), QgsRaster.IdentifyFormatValue).results().values()
 list(v)[0]
 
+# osm data
+ogr2ogr -overwrite --config OSM_CONFIG_FILE python\plugins\QuickOSM\resources\ogr\to_be_modified_osmconf.ini -skipfailures -f "ESRI Shapefile" dst_name file.osm
+
 TODO :
 - mode pano : pb exagération en z dans le lointain
 - passe-t-on par geom is collection ?
@@ -215,7 +218,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def getThumbnailGeom(self):
         # emprise initiale ... lignes
         # limiter le nombre de colonnes, lignes à une dizaine
-        dx = self.mt.zoneWidth / 10
+        dx = self.mt.finalWidth / 10
         lines = self.mt.getSampleLines()
         geom = QgsGeometry.fromMultiPolylineXY(lines)
         lineCount = len(lines)
@@ -229,8 +232,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 aH = aH + 360
 
             alpha = aH-aD
-            dAlphaDetail = 2 * alpha / (self.mt.zoneWidth / self.xStep.value())
-            dAlpha = 2 * alpha / (self.mt.zoneWidth / dx)
+            dAlphaDetail = 2 * alpha / (self.mt.finalWidth / self.xStep.value())
+            dAlpha = 2 * alpha / (self.mt.finalWidth / dx)
 
             aPrim = QgsGeometry.fromPointXY(self.mt.pH)
             aPrim.rotate(-alpha, self.mt.pY)
@@ -258,7 +261,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 g.rotate(2*dAlphaDetail, self.mt.pY)
                 line.append(g.asPoint())
 
-                for nx in range(2+int(self.mt.zoneWidth / dx)):
+                for nx in range(2+int(self.mt.finalWidth / dx)):
                     if nx*dAlpha > 2*dAlphaDetail:
                         g = QgsGeometry.fromPointXY(p)
                         g.rotate(nx*dAlpha, self.mt.pY)
@@ -295,12 +298,14 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         def projPolyline(polyline):
             segAD = QgsGeometry.fromPolylineXY([self.mt.pA, self.mt.pD])
+            segCD = QgsGeometry.fromPolylineXY([self.mt.pC, self.mt.pD])
             prof1 = 0
             for i, pt in enumerate(polyline):
                 z = (self.getElevation(self.xMap2Raster.transform(pt.x(), pt.y()))-self.altY)*self.zFactor.value()
                 if self.parallelView.isChecked():
+                    # self.info("//")
                     newX = self.mt.pR.x()+segAD.distance(QgsGeometry.fromPointXY(pt))
-                    zs, prof = self.getZShift(self.mt.pY.distance(pt)-self.mt.d0)
+                    zs, prof = self.getZShift(segCD.distance(QgsGeometry.fromPointXY(pt)))
                 else:
                     d = self.mt.pY.distance(pt)
                     az = self.mt.pY.azimuth(pt)
@@ -308,7 +313,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     if aD > az:
                         az = az + 360
                     fx = (az-aD)/angleVue
-                    newX = self.mt.pR.x() + fx*self.mt.zoneWidth
+                    newX = self.mt.pR.x() + fx*self.mt.finalWidth
                     zs, prof = self.getZShift(d-self.mt.d0)
 
                 newY = self.mt.pR.y() + zs + z
@@ -362,7 +367,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 aH = aH + 360
 
             alpha = aH-aD
-            dAlpha = 2 * alpha / (self.mt.zoneWidth / dx)
+            dAlpha = 2 * alpha / (self.mt.finalWidth / dx)
             # self.log("{} {} {}".format(str(aH), str(aD), str(dAlpha)))
             # dAlpha = dAlpha if dAlpha > 0 else -dAlpha
 
@@ -377,7 +382,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             polyline = []
             for p in gauche:
                 line = []
-                for nx in range(2+int(self.mt.zoneWidth / dx)):
+                for nx in range(2+int(self.mt.finalWidth / dx)):
                     g = QgsGeometry.fromPointXY(p)
                     g.rotate(nx*dAlpha, self.mt.pY)
                     line.append(g.asPoint())
@@ -620,7 +625,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             hull = zon.convexHull()
             if (poiLayer.wkbType() == QgsWkbTypes.Point or poiLayer.wkbType() == QgsWkbTypes.MultiPoint):
                 segAD = QgsGeometry.fromPolylineXY([self.mt.pA, self.mt.pD])
-                # segCD = QgsGeometry.fromPolylineXY([self.mt.pC, self.mt.pD])
+                segCD = QgsGeometry.fromPolylineXY([self.mt.pC, self.mt.pD])
                 feats = []
                 fid = 1
                 for feat in features:
@@ -630,16 +635,17 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         # reprojeter les points
                         prof = 0
                         azimuth = 0
-                        depth = self.mt.pY.distance(poiPointXY)-self.mt.d0
                         if self.parallelView.isChecked():
+                            depth = segCD.distance(QgsGeometry.fromPointXY(poiPointXY))
                             newX = self.mt.pR.x()+segAD.distance(QgsGeometry.fromPointXY(poiPointXY))
                             zs, prof = self.getZShift(depth)
                             newY = self.mt.pR.y()+zs + z*self.zFactor.value()
                         else:
+                            depth = self.mt.pY.distance(poiPointXY)-self.mt.d0
                             azimuth = self.mt.pY.azimuth(poiPointXY)
                             az = azimuth + 360 if aD > azimuth else azimuth
                             fx = (az-aD)/angleVue
-                            newX = self.mt.pR.x() + fx*self.mt.zoneWidth
+                            newX = self.mt.pR.x() + fx*self.mt.finalWidth
                             zs, prof = self.getZShift(depth)
                             newY = self.mt.pR.y()+zs + z*self.zFactor.value()
 
@@ -1062,7 +1068,7 @@ class MapTool(QgsMapTool):
             alpha = math.atan(z / dist)
             dh = (dist-self.d0) * math.tan(alpha)  # (z/dist)
             p1 = QgsPointXY(self.pR.x(), self.pR.y() + dh + ixL*self.widget.zShift.value())
-            p2 = QgsPointXY(self.pR.x() + self.zoneWidth, self.pR.y() + dh + ixL*self.widget.zShift.value())
+            p2 = QgsPointXY(self.pR.x() + self.finalWidth, self.pR.y() + dh + ixL*self.widget.zShift.value())
             g = [p1, p2]
             yield g
 
@@ -1094,6 +1100,10 @@ class MapTool(QgsMapTool):
             backSide = QgsGeometry.fromPolylineXY([self.pA, self.pB]).densifyByDistance(self.widget.xStep.value()).asPolyline()
             frontSide = QgsGeometry.fromPolylineXY([self.pD, self.pC]).densifyByDistance(self.widget.xStep.value()).asPolyline()
             polylineX = list(zip(frontSide[:5], backSide[:5]))
+
+            # largeur de la zone projetée
+            self.finalWidth = self.zoneWidth
+
         else:
             # dy = self.pA.distance(self.pD) / (self.widget.lineCount.value()-1)
             aH = self.pY.azimuth(self.pH)
@@ -1102,7 +1112,7 @@ class MapTool(QgsMapTool):
                 aH = aH + 360
 
             alpha = aH-aD
-            dAlphaDetail = 2 * alpha / (self.zoneWidth / self.widget.xStep.value())
+            dAlphaDetail = 2 * alpha / (self.finalWidth / self.widget.xStep.value())
             dAlpha = 2 * alpha / 12
             # self.widget.log("{} {} {}".format(str(aH), str(aD), str(dAlpha)))
             # dAlpha = dAlpha if dAlpha > 0 else -dAlpha
@@ -1129,6 +1139,9 @@ class MapTool(QgsMapTool):
                 aPrim.rotate(dAlphaDetail, self.pY)
                 dPrim.rotate(dAlphaDetail, self.pY)
 
+            # largeur de la zone projetée
+            self.finalWidth = QgsGeometry.fromPolylineXY(polyline[int(len(polyline)/2)]).length()
+
         self.cuttingLines = polyline
         self.rbLines.setToGeometry(QgsGeometry.fromMultiPolylineXY(polylineX + polyline[0:50]+polyline[::max(1, 1+int(len(polyline)/50))][-50:]))
 
@@ -1149,7 +1162,7 @@ class MapTool(QgsMapTool):
             self.widget.log(repr(format_exception[1]))
             self.widget.log(repr(format_exception[2]))
 
-        nbPoints = int(len(polyline)*(self.zoneWidth / self.widget.xStep.value()))
+        nbPoints = int(len(polyline)*(self.finalWidth / self.widget.xStep.value()))
         alert = ''
         if (nbPoints > 100000):
             alert = alert + 'Attention : {} points\n'.format(nbPoints)
