@@ -41,7 +41,7 @@ Un calcul de 'ligne de crête' rehausse les reliefs.
 
 ## Les prérequis
 - disposer d'un image (raster) d'altitude (MNT). différentes sources possibles : https://dwtkns.com/srtm30m/, https://opendem.info, https://grindgis.com/data/free-world-dem-data
-- de travailler dans une projection dont l'unité coïncide avec l'unité altimétrique du MNT (le mètre par exemple pour la projection Lambert93). 
+- de travailler dans une projection dont l'unité coïncide avec l'unité altimétrique du MNT (le mètre par exemple pour la projection Lambert93 ou 3857, pseudo mercator). 
 
 ## Exemples
 
