@@ -4,7 +4,7 @@ Un plugin QGis 3.10...
   - [Les prérequis](#les-pr%c3%a9requis)
   - [Exemples](#exemples)
     - [Un fonctionnement basique.](#un-fonctionnement-basique)
-    - [La vue radiale :](#la-vue-radiale)
+    - [La vue radiale](#la-vue-radiale)
     - [Ornementations...](#ornementations)
   - [Les couches produites](#les-couches-produites)
     - [Lignes](#lignes)
@@ -17,7 +17,7 @@ Un plugin QGis 3.10...
   - [Prerequisites](#prerequisites)
   - [Examples](#examples)
     - [Basic use](#basic-use)
-    - [The radial view :](#the-radial-view)
+    - [The radial view](#the-radial-view)
     - [Ornementations...](#ornementations-1)
   - [The layers produced](#the-layers-produced)
     - [Lines](#lines)
@@ -50,12 +50,12 @@ Choix de la zone (utilisation des poignées), sélection de la couche qui porte 
 
 ![Démo simple](dem_slicer/help/dem-demo-1.gif)
 
-### La vue radiale :
+### La vue radiale
 Les coupes suivent alors des arcs de cercle d'iso-distance à l'observateur.
 
 ![Vue radiale](dem_slicer/help/dem-demo-2.gif)
 
-### Ornementations...
+### Ornementations
 
 La couche de points choisie sera 'projetée' sur les coupes. Un attribut indique si le point ainsi projeté est visible (masqué ou non par une coupe). Le style par défaut utilise les champs 'nom', 'name' ou 'label' pour étiquetage.
 Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet replacé en altitude. Résultat souvent mal fichu et très gourmant en temps. Attention : annulation impossible, faire des tests sur petit jeu de données.
@@ -119,7 +119,7 @@ Obs : Altitude de l'observateur par rapport au sol. Comme le 'décalage en z', i
 
 ![elevation](dem_slicer/help/dem-demo-elevation.gif)
 
-## Les styles... 
+## Les styles
 
 Couleurs, transparence, texture... tout est possible avec QGis ! 
 
@@ -156,10 +156,10 @@ Choice of the zone (use of the handles), selection of the layer which carries th
 
 ![Basic use](dem_slicer/help/dem-demo-1.gif)
 
-### The radial view :
+### The radial view
 The profiles then follow arcs of an iso-distance to the observer.
 
-### Ornementations...
+### Ornementations
 
 The selected point layer will be 'projected' on the profiles. An attribute indicates whether the point thus projected is visible (hidden or not by a section). The default style uses the fields 'name' or 'label' for labeling.
 
@@ -204,7 +204,7 @@ zFactor : accentuation of the relief.
 
 elevation : Altitude of the observer relative to the ground. Like 'zShift', influences the vertical offset of the sections, more faithful to reality.
 
-## The styles... 
+## The styles
 
 Colors, transparency, texture ... everything is possible with QGis!
 
