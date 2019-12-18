@@ -61,7 +61,7 @@
        </widget>
       </item>
       <item row="4" column="0">
-       <widget class="QLabel" name="label_2">
+       <widget class="QLabel" name="lineCountLabel">
         <property name="text">
          <string>Line count</string>
         </property>
@@ -71,7 +71,7 @@
        </widget>
       </item>
       <item row="12" column="0">
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="zFactorLabel">
         <property name="text">
          <string>Z exageration</string>
         </property>
@@ -116,7 +116,7 @@
        </widget>
       </item>
       <item row="9" column="0">
-       <widget class="QLabel" name="label_3">
+       <widget class="QLabel" name="xStepLabel">
         <property name="text">
          <string>X Step</string>
         </property>
@@ -126,7 +126,7 @@
        </widget>
       </item>
       <item row="11" column="0">
-       <widget class="QLabel" name="label_4">
+       <widget class="QLabel" name="zShiftLabel">
         <property name="text">
          <string>Z shift</string>
         </property>
@@ -231,7 +231,7 @@
          <bool>false</bool>
         </property>
         <property name="text">
-         <string>Parallel view</string>
+         <string>Orthogonal view</string>
         </property>
         <property name="checked">
          <bool>true</bool>
@@ -273,7 +273,7 @@
        </widget>
       </item>
       <item row="3" column="0">
-       <widget class="QLabel" name="label_5">
+       <widget class="QLabel" name="poiListLabel">
         <property name="text">
          <string>Ornamentation layer</string>
         </property>
@@ -299,6 +299,9 @@
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
          <widget class="QToolButton" name="btnSave">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="toolTip">
            <string>Save parameters</string>
           </property>
@@ -309,6 +312,9 @@
         </item>
         <item>
          <widget class="QToolButton" name="btnLoad">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="toolTip">
            <string>Load parameters</string>
           </property>
@@ -322,7 +328,7 @@
       <item row="13" column="0">
        <widget class="QLabel" name="labelElevation">
         <property name="text">
-         <string>Obs :    +</string>
+         <string>Obs :   +</string>
         </property>
        </widget>
       </item>
@@ -346,7 +352,7 @@
       <property name="enabled">
        <bool>false</bool>
       </property>
-      <property name="value">
+      <property name="value"> 
        <number>0</number>
       </property>
      </widget>

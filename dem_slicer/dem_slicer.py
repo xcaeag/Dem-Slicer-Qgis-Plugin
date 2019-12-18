@@ -89,8 +89,7 @@ class DemSlicer:
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&D.E.M. Slicer')
-        # TODO: We are going to let the user set this up in a future iteration
-        self.toolbar = self.iface.addToolBar(u'DemSlicer')
+        self.toolbar = self.iface.addToolBar(u'zga')
         self.toolbar.setObjectName(u'DemSlicer')
 
         self.pluginIsActive = False
@@ -99,8 +98,6 @@ class DemSlicer:
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
-
-        We implement this ourselves since we do not inherit QObject.
 
         :param message: String for translation.
         :type message: str, QString
@@ -215,8 +212,6 @@ class DemSlicer:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
 
-        #print "** UNLOAD DemSlicer"
-
         for action in self.actions:
             self.iface.removePluginRasterMenu(
                 self.tr(u'&D.E.M. Slicer'),
@@ -243,6 +238,5 @@ class DemSlicer:
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
 
             # show the dockwidget
-            # TODO: fix to allow choice of dock location
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwidget)
             self.dockwidget.show()

@@ -20,28 +20,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-
-# test getElevation
-mntLayer = QgsProject.instance().mapLayersByName("MNT 25m IGN - Altitudes (gris)")[0]
-dict = mntLayer.dataProvider().identify(QgsPointXY(457881,6187641), QgsRaster.IdentifyFormatValue).results().values()
-list(dict)[0]
-
-# test sur tiff
-mntLayer = QgsProject.instance().mapLayersByName("srtm_pyr")[0]
-v = mntLayer.dataProvider().identify(QgsPointXY(457881,6187641), QgsRaster.IdentifyFormatValue).results().values()
-list(v)[0]
-
-# osm data
-ogr2ogr -overwrite --config OSM_CONFIG_FILE python\plugins\QuickOSM\resources\ogr\to_be_modified_osmconf.ini -skipfailures -f "ESRI Shapefile" dst_name file.osm
-
-TODO :
-- mode pano : pb exagération en z dans le lointain
-- passe-t-on par geom is collection ?
-- traduction
-- alerte projections
-- tester différentes projections
-- choix de styles
-- attributs en float
 """
 
 import os
@@ -86,7 +64,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.translator.load(localePath)
             QCoreApplication.installTranslator(self.translator)
 
-        self.rasterListLabel.setText(self.tr(self.rasterListLabel.text()))
+        for widget in [self.rasterListLabel, self.btnBuild, self.btnStart, self.lineCountLabel, self.zFactorLabel, self.xStepLabel, self.zShiftLabel, self.renderLines, self.renderPolygons, self.renderRidges, self.parallelView, self.poiListLabel, self.labelElevation, self.btnLoad]:
+            widget.setText(self.tr(widget.text()))
+
+        for widget in [self.btnSave, self.reset, self.btnLoad]:
+            widget.setToolTip(self.tr(widget.toolTip()))
 
         self.widget2Enable = [self.lineCount, self.rasterList, self.poiList, self.xStep, self.zShift, self.zFactor, self.renderLines, self.renderPolygons, self.renderRidges,
                               self.btnBuild, self.progressBar, self.parallelView, self.reset, self.btnLoad, self.btnSave, self.elevation]
@@ -94,7 +76,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.alert.setText('')
 
     def tr(self, message):
-        return QCoreApplication.translate('@default', message)
+        return QCoreApplication.translate('DemSlicer', message)
 
     def closeEvent(self, event):
         self.closingPlugin.emit()
