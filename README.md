@@ -97,7 +97,7 @@ Attributs (ajoutés aux attributs de la couche originale) :
 
 ## Les paramètres en détail
 
-Nombre de profils : c'est tout simplement le nombre de coupes générés.
+Nombre de profils : c'est tout simplement le nombre de coupes générées.
 
 ![linecount](help/dem-demo-linecount.gif)
 
@@ -113,7 +113,7 @@ Accentuation du relief : Exagération du relief (multiplication).
 
 ![zfactor](help/dem-demo-zfactor.gif)
 
-Obs : Altitude de l'observateur par rapport au sol. Comme le 'décalage en z', influe sur le décalage vertical des coupes, en plus fidèle à la réalité. 
+Obs : Altitude de l'observateur par rapport au sol. Comme le 'décalage en z', influ sur le décalage vertical des coupes, en plus fidèle à la réalité. 
 
 ![elevation](help/dem-demo-elevation.gif)
 
