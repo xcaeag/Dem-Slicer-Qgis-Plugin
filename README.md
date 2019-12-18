@@ -1,8 +1,10 @@
+Un plugin QGis 3.10...
+
 - [D.E.M. Slicer (fr)](#dem-slicer-fr)
   - [Les prérequis](#les-pr%c3%a9requis)
   - [Exemples](#exemples)
     - [Un fonctionnement basique.](#un-fonctionnement-basique)
-    - [La vue 'panoramique' :](#la-vue-panoramique)
+    - [La vue radiale :](#la-vue-radiale)
     - [Ornementations...](#ornementations)
   - [Les couches produites](#les-couches-produites)
     - [Lignes](#lignes)
@@ -15,7 +17,7 @@
   - [Prerequisites](#prerequisites)
   - [Examples](#examples)
     - [Basic use](#basic-use)
-    - [The 'radial' view :](#the-radial-view)
+    - [The radial view :](#the-radial-view)
     - [Ornementations...](#ornementations-1)
   - [The layers produced](#the-layers-produced)
     - [Lines](#lines)
@@ -48,7 +50,7 @@ Choix de la zone (utilisation des poignées), sélection de la couche qui porte 
 
 ![Démo simple](dem_slicer/help/dem-demo-1.gif)
 
-### La vue 'panoramique' :
+### La vue radiale :
 Les coupes suivent alors des arcs de cercle d'iso-distance à l'observateur.
 
 ![Vue radiale](dem_slicer/help/dem-demo-2.gif)
@@ -154,7 +156,7 @@ Choice of the zone (use of the handles), selection of the layer which carries th
 
 ![Basic use](dem_slicer/help/dem-demo-1.gif)
 
-### The 'radial' view :
+### The radial view :
 The profiles then follow arcs of an iso-distance to the observer.
 
 ### Ornementations...
