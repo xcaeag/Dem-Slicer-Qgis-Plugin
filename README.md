@@ -1,12 +1,41 @@
-# D.E.M. Slicer
+- [D.E.M. Slicer (fr)](#dem-slicer-fr)
+  - [Les prérequis](#les-pr%c3%a9requis)
+  - [Exemples](#exemples)
+    - [Un fonctionnement basique.](#un-fonctionnement-basique)
+    - [La vue 'panoramique' :](#la-vue-panoramique)
+    - [Ornementations...](#ornementations)
+  - [Les couches produites](#les-couches-produites)
+    - [Lignes](#lignes)
+    - [Polygones](#polygones)
+    - [Crêtes](#cr%c3%aates)
+    - [Ornementation (points)](#ornementation-points)
+  - [Les paramètres en détail](#les-param%c3%a8tres-en-d%c3%a9tail)
+  - [Les styles...](#les-styles)
+- [D.E.M. Slicer (en)](#dem-slicer-en)
+  - [Prerequisites](#prerequisites)
+  - [Examples](#examples)
+    - [Basic use](#basic-use)
+    - [The 'radial' view :](#the-radial-view)
+    - [Ornementations...](#ornementations-1)
+  - [The layers produced](#the-layers-produced)
+    - [Lines](#lines)
+    - [Polygons](#polygons)
+    - [Ridges](#ridges)
+    - [Ornementation (points)](#ornementation-points-1)
+  - [The parameters in detail](#the-parameters-in-detail)
+  - [The styles...](#the-styles)
+  
+# D.E.M. Slicer (fr)
 
 ![ex1](help/all.png)
 
 Il s'agit d'un outil simple de découpe (en tranches !) de MNT, pour dessiner de jolies cartes postales, pour les amoureux de reliefs. 
 
-Le principe est de générer une série de profils d'altitudes (sous forme de lignes ou de polygones), de les juxtaposer pour donner l'illusion d'une vue 3D. Ici, pas de calcul de l'indice de réfraction atmosphérique, pas de prise en compte de la courbure terrestre... juste un peu de géométrie, et les styles font le reste. Les couches résultantes sont positionnées où bon vous semble, le système de coordonnées utilisé est celui de la carte.
+Le principe est de construire une série de profils d'altitudes (sous forme de lignes ou de polygones), de les juxtaposer pour donner l'illusion d'une vue 3D. Ici, pas de calcul de l'indice de réfraction atmosphérique, pas de prise en compte de la courbure terrestre... juste un peu de géométrie, et les styles font le reste. Les couches résultantes sont positionnées où bon vous semble, le système de coordonnées utilisé est celui de la carte.
 
-Les décalages (variés selon les paramètres retenus) en hauteur de chaque coupe simulent des vues parallèles ou 'perspective', une vision 'panoramique' tente de se rapprocher de la vision que peut avoir un observateur.
+Les décalages (variés selon les paramètres retenus) en hauteur de chaque coupe simulent des vues parallèles ou 'perspective', une vision 'radiale' tente de se rapprocher de la vision que peut avoir un observateur.
+
+Un calcul de 'ligne de crête' rehausse les reliefs.
 
 ## Les prérequis
 - disposer d'un image (raster) d'altitude (MNT). différentes sources possibles : https://dwtkns.com/srtm30m/, https://opendem.info, https://grindgis.com/data/free-world-dem-data
@@ -20,14 +49,14 @@ Choix de la zone (utilisation des poignées), sélection de la couche qui porte 
 ![Démo simple](help/dem-demo-1.gif)
 
 ### La vue 'panoramique' :
-Les tranches de terrain suivent alors des arcs de cercle d'iso-distance à l'observateur.
+Les coupes suivent alors des arcs de cercle d'iso-distance à l'observateur.
 
-![Vue panoramique](help/dem-demo-2.gif)
+![Vue radiale](help/dem-demo-2.gif)
 
 ### Ornementations...
 
 La couche de points choisie sera 'projetée' sur les coupes. Un attribut indique si le point ainsi projeté est visible (masqué ou non par une coupe). Le style par défaut utilise les champs 'nom', 'name' ou 'label' pour étiquetage.
-Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet replacé en altitude. Résultat souvent mal fichu et très gourmant. Attention : annulation impossible, faire des tests sur petit jeu de données.
+Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet replacé en altitude. Résultat souvent mal fichu et très gourmant en temps. Attention : annulation impossible, faire des tests sur petit jeu de données.
 
 ![P.O.I.](help/dem-demo-3.gif)
 
@@ -51,7 +80,7 @@ Attributs :
 Attributs : 
 
     "num" - numéro de la ligne. 
-    "gaz" - nombre de coupes que cette crête masque.  
+    "gaz" - nombre de profils que cette crête cache. 
     "prof" - 'profondeur' de la crête (0 = proche...)
 
 ![layer ridge](help/ex_ridge.png)
@@ -68,32 +97,116 @@ Attributs (ajoutés aux attributs de la couche originale) :
 
 ## Les paramètres en détail
 
-linecount : c'est tout simplement le nombre de profils (de coupes) générés.
+Nombre de profils : c'est tout simplement le nombre de coupes générés.
 
 ![linecount](help/dem-demo-linecount.gif)
 
-xStep : distance entre deux mesures d'altitude, le long des profils. 
+Ecart entre deux mesures d'altitude : distance entre deux points, le long des profils. 
 
 ![xstep](help/dem-demo-xstep.gif)
 
-zShift : décalage vertical des coupes. Rend plus visible les coupes qui sont en arrière plan. Effet 'vue aérienne'.
+Décalage des profils : décalage vertical des coupes. Rend plus visible les coupes qui sont en arrière plan. Effet 'vue aérienne'.
 
 ![zshift](help/dem-demo-zshift.gif)
 
-zFactor : Exagération du relief.
+Accentuation du relief : Exagération du relief (multiplication).
 
 ![zfactor](help/dem-demo-zfactor.gif)
 
-elevation : Altitude de l'observateur par rapport au sol. Comme 'zShift', influe sur le décalage vertical des coupes, en plus fidèle à la réalité. 
+Obs : Altitude de l'observateur par rapport au sol. Comme le 'décalage en z', influe sur le décalage vertical des coupes, en plus fidèle à la réalité. 
 
 ![elevation](help/dem-demo-elevation.gif)
 
 ## Les styles... 
 
+Couleurs, transparence, texture... tout est possible avec QGis ! 
+
+Les attributs que portent les géométries peuvent servir à ajuster les styles. Par exemple, l'épaisseur des lignes de crête peut varier selon le nombre de profils qui sont cachés par la crête (attribut 'gaz') :
+
+    scale_linear( coalesce( "gaz", maximum("gaz")/3) , 0, maximum("gaz"), 0.05, 0.8)
+
 ![style line](help/ex_line.png)
 
 ![style polygon](help/ex_polygon.png)
 
+![style polygon](help/ex_texture.png)
 
 
+# D.E.M. Slicer (en)
+
+It is a simple cutting tool (in slices) of DEM data, to draw pretty postcards, for lovers of reliefs.
+
+The principle is to build a series of altitude profiles (lines or polygons), to juxtapose them to give the illusion of a 3D view. Here, no calculation of the atmospheric refractive index, no consideration of the Earth's curvature ... just a little geometry, and the styles do the rest. The resulting layers are positioned where you want, the coordinate system used is that of the map (prefer 3857 rather than 4326 - in degrees -).
+
+The offsets (varied according to the parameters chosen) in height of each cut simulate parallel or perspective views, a 'radial' vision attempts to get closer to the vision that an observer can have.
+
+A 'ridge line' calculation enhances the reliefs.
+
+
+## Prerequisites
+- have an altitude raster image. different possible sources: https://dwtkns.com/srtm30m/, https://opendem.info, https://grindgis.com/data/free-world-dem-data
+- to work in a projection whose unit coincides with the altimetric unit of the DEM (3857, WGS 84 / Pseudo-Mercator for example). 
+
+## Examples
+
+### Basic use 
+Choice of the zone (use of the handles), selection of the layer which carries the altitudes, adjustment of some parameters and results  : 
+
+![Basic use](help/dem-demo-1.gif)
+
+### The 'radial' view :
+The profiles then follow arcs of an iso-distance to the observer.
+
+### Ornementations...
+
+The selected point layer will be 'projected' on the profiles. An attribute indicates whether the point thus projected is visible (hidden or not by a section). The default style uses the fields 'name' or 'label' for labeling.
+
+A line layer or polygons will be cut by the profile lines, each vertex replaced in altitude. Result often badly done and very time consuming. Please note: cancellation is not possible, test on small data set.
+
+## The layers produced
+
+### Lines
+Attributes : 
+
+    "num" - line number. Zero starting at the bottom.
+
+### Polygons 
+Attributes : 
+
+    "num" - polygone number.
+
+### Ridges
+Attributes : 
+
+    "num" - line number. 
+    "gaz" - number of profiles that this crest hides 
+    "prof" - 'depth' of the ridge (0 = close...)
+
+### Ornementation (points)
+Attributes (added to the attributes of the original layer) : 
+
+    "num" - point number. 
+    "z" - calculated altitude.  
+    "depth" - distance to observer
+    "visi" - visibility in the cutting series (0: hidden, 1: visible)
+
+## The parameters in detail
+
+linecount : it is simply the number of profiles (sections) generated.
+
+xStep : distance between two altitude measurements, along the profiles.
+
+zShift : vertical offset of the profiles. Makes the cuts in the background more visible. 'Aerial view' effect.
+
+zFactor : accentuation of the relief.
+
+elevation : Altitude of the observer relative to the ground. Like 'zShift', influences the vertical offset of the sections, more faithful to reality.
+
+## The styles... 
+
+Colors, transparency, texture ... everything is possible with QGis!
+
+The attributes carried by the geometries can be used to adjust styles. For example, the thickness of the ridge lines can vary depending on the number of profiles that are hidden by the ridge (attribute 'gaz') :
+
+    scale_linear( coalesce( "gaz", maximum("gaz")/3) , 0, maximum("gaz"), 0.05, 0.8)
 
