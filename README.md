@@ -27,7 +27,7 @@
   
 # D.E.M. Slicer (fr)
 
-![ex1](help/all.png)
+![ex1](dem_slicer/help/all.png)
 
 Il s'agit d'un outil simple de découpe (en tranches !) de MNT, pour dessiner de jolies cartes postales, pour les amoureux de reliefs. 
 
@@ -46,19 +46,19 @@ Un calcul de 'ligne de crête' rehausse les reliefs.
 ### Un fonctionnement basique. 
 Choix de la zone (utilisation des poignées), sélection de la couche qui porte les altitudes, ajustement de quelques paramètres et résultats  : 
 
-![Démo simple](help/dem-demo-1.gif)
+![Démo simple](dem_slicer/help/dem-demo-1.gif)
 
 ### La vue 'panoramique' :
 Les coupes suivent alors des arcs de cercle d'iso-distance à l'observateur.
 
-![Vue radiale](help/dem-demo-2.gif)
+![Vue radiale](dem_slicer/help/dem-demo-2.gif)
 
 ### Ornementations...
 
 La couche de points choisie sera 'projetée' sur les coupes. Un attribut indique si le point ainsi projeté est visible (masqué ou non par une coupe). Le style par défaut utilise les champs 'nom', 'name' ou 'label' pour étiquetage.
 Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet replacé en altitude. Résultat souvent mal fichu et très gourmant en temps. Attention : annulation impossible, faire des tests sur petit jeu de données.
 
-![P.O.I.](help/dem-demo-3.gif)
+![P.O.I.](dem_slicer/help/dem-demo-3.gif)
 
 ## Les couches produites 
 
@@ -67,14 +67,14 @@ Attributs :
 
     "num" - numéro de la ligne. Le zéro commençant au fond.
 
-![layer line](help/ex_line.png)
+![layer line](dem_slicer/help/ex_line.png)
 
 ### Polygones 
 Attributs : 
 
     "num" - numéro du polygone. Le zéro commençant au fond.
 
-![layer polygon](help/ex_poly.png)
+![layer polygon](dem_slicer/help/ex_poly.png)
 
 ### Crêtes
 Attributs : 
@@ -83,7 +83,7 @@ Attributs :
     "gaz" - nombre de profils que cette crête cache. 
     "prof" - 'profondeur' de la crête (0 = proche...)
 
-![layer ridge](help/ex_ridge.png)
+![layer ridge](dem_slicer/help/ex_ridge.png)
 
 ### Ornementation (points)
 Attributs (ajoutés aux attributs de la couche originale) : 
@@ -93,29 +93,29 @@ Attributs (ajoutés aux attributs de la couche originale) :
     "depth" - distance à l'observateur
     "visi" - visibilité dans la série de coupe (0 : masqué, 1 : visible)
 
-![layer POI](help/ex_ornement.png)
+![layer POI](dem_slicer/help/ex_ornement.png)
 
 ## Les paramètres en détail
 
 Nombre de profils : c'est tout simplement le nombre de coupes générées.
 
-![linecount](help/dem-demo-linecount.gif)
+![linecount](dem_slicer/help/dem-demo-linecount.gif)
 
 Ecart entre deux mesures d'altitude : distance entre deux points, le long des profils. 
 
-![xstep](help/dem-demo-xstep.gif)
+![xstep](dem_slicer/help/dem-demo-xstep.gif)
 
 Décalage des profils : décalage vertical des coupes. Rend plus visible les coupes qui sont en arrière plan. Effet 'vue aérienne'.
 
-![zshift](help/dem-demo-zshift.gif)
+![zshift](dem_slicer/help/dem-demo-zshift.gif)
 
 Accentuation du relief : Exagération du relief (multiplication).
 
-![zfactor](help/dem-demo-zfactor.gif)
+![zfactor](dem_slicer/help/dem-demo-zfactor.gif)
 
 Obs : Altitude de l'observateur par rapport au sol. Comme le 'décalage en z', influ sur le décalage vertical des coupes, en plus fidèle à la réalité. 
 
-![elevation](help/dem-demo-elevation.gif)
+![elevation](dem_slicer/help/dem-demo-elevation.gif)
 
 ## Les styles... 
 
@@ -125,11 +125,11 @@ Les attributs que portent les géométries peuvent servir à ajuster les styles.
 
     scale_linear( coalesce( "gaz", maximum("gaz")/3) , 0, maximum("gaz"), 0.05, 0.8)
 
-![style line](help/ex_line.png)
+![style line](dem_slicer/help/ex_line.png)
 
-![style polygon](help/ex_polygon.png)
+![style polygon](dem_slicer/help/ex_polygon.png)
 
-![style polygon](help/ex_texture.png)
+![style polygon](dem_slicer/help/ex_texture.png)
 
 
 # D.E.M. Slicer (en)
@@ -152,7 +152,7 @@ A 'ridge line' calculation enhances the reliefs.
 ### Basic use 
 Choice of the zone (use of the handles), selection of the layer which carries the altitudes, adjustment of some parameters and results  : 
 
-![Basic use](help/dem-demo-1.gif)
+![Basic use](dem_slicer/help/dem-demo-1.gif)
 
 ### The 'radial' view :
 The profiles then follow arcs of an iso-distance to the observer.
