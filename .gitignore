@@ -1,4 +1,4 @@
 pb_tool.cfg
 .vscode
 i18n/*.qm
-dem_slicer/dem_slicer.zip
+dem_slicer/*.zip

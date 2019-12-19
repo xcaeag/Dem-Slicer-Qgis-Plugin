@@ -6,8 +6,8 @@
 name=D.E.M. Slicer
 qgisMinimumVersion=3.10
 description=D.E.M. slicer, an 'artistic' relief cutting tool
-version=0.1
-author=xc
+version=0.2
+author=Xavier Culos
 email=xavier.culos@gmail.com
 
 about=It is a simple tool for cutting (in slices) of DEM, to draw pretty postcards, for the lovers of reliefs.
