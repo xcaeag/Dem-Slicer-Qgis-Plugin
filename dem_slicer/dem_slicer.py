@@ -89,7 +89,7 @@ class DemSlicer:
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&D.E.M. Slicer')
-        self.toolbar = self.iface.addToolBar(u'zga')
+        self.toolbar = self.iface.addToolBar(u'Dem slicer')
         self.toolbar.setObjectName(u'DemSlicer')
 
         self.pluginIsActive = False

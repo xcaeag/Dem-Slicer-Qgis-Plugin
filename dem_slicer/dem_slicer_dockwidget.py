@@ -145,8 +145,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         :rtype: int
          """
         try:
-            v = self.mntLayer.dataProvider().identify(point, QgsRaster.IdentifyFormatValue).results().values()
-            return int(list(v)[0])
+            # v = self.mntLayer.dataProvider().identify(point, QgsRaster.IdentifyFormatValue).results().values()
+            # return int(list(v)[0])
+            v, ok = self.mntLayer.dataProvider().sample(point, 1)
+            return v if ok else 0
         except:
             return 0
 
@@ -238,12 +240,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
             leftEdge = QgsGeometry.fromPolylineXY([aPrim, dPrim]).densifyByCount(lineCount-2).asPolyline()
             polyline = []
+            samplePointNumber = 2+int(self.mt.finalWidth / dx)
             for p in leftEdge:
                 line = []
 
                 # first point
-                g = QgsGeometry.fromPointXY(p)
-                line.append(g.asPoint())
+                line.append(p)
 
                 # second
                 g = QgsGeometry.fromPointXY(p)
@@ -255,10 +257,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 g.rotate(2*dAlphaDetail, self.mt.pY)
                 line.append(g.asPoint())
 
-                for nx in range(2+int(self.mt.finalWidth / dx)):
+                g = QgsGeometry.fromPointXY(p)
+                for nx in range(samplePointNumber):
                     if nx*dAlpha > 2*dAlphaDetail:
-                        g = QgsGeometry.fromPointXY(p)
-                        g.rotate(nx*dAlpha, self.mt.pY)
+                        g.rotate(dAlpha, self.mt.pY)
                         line.append(g.asPoint())
 
                 polyline.append(line)
@@ -410,7 +412,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.progressBar.setValue(progess)
             progess = progess + 1
             xs, ys, zs = map(list, zip(*[(point.x(), point.y(), self.getElevation(self.xMap2Raster.transform(point.x(), point.y()))-self.altY) for point in lineIn]))
-
+            # zs = [(self.getElevation(self.xMap2Raster.transform(point.x(), point.y()))-self.altY) for point in lineIn]
             for z, point in zip(zs, lineOut):
                 point.setY(point.y()+z*zf)
 
