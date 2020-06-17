@@ -494,6 +494,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             hLayer.updateFields()
 
             horizons = []
+            hiddens = []
             previousLine = None
             previousPolygon = None
             polyMax = None
@@ -505,14 +506,17 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     previousPolygon = poly
                     continue
 
-                cut = previousLine.difference(poly)
                 if polyMax is not None and not polyMax.isNull():
-                    cut = cut.difference(polyMax)
+                    cut = previousLine.difference(polyMax)
+                    inter = previousLine.intersection(polyMax)
                     polyMax = polyMax.combine(previousPolygon)
                 else:
+                    cut = previousLine.difference(poly)
+                    inter = previousLine.intersection(poly)
                     polyMax = previousPolygon
 
                 horizons.append(cut)
+                hiddens.append(inter)
 
                 previousLine = lin
                 previousPolygon = poly
@@ -521,6 +525,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             cut = aLines[0].difference(aPolys[1])
             cut = cut.difference(polyMax)
             horizons.append(cut)
+            #inter = aLines[0].intersection(aPolys[1])
+            #inter = inter.intersection(polyMax)
+            #hiddens.append(inter)
 
             fid = 1
             feats = []
@@ -572,8 +579,43 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         self.log(repr(format_exception[2]))
                         """
 
-            hLayer.dataProvider().addFeatures(feats)
+            # lignes sous horizons
+            for prof, lin in enumerate(hiddens):
+                # self.log(prof)
+                if lin.isMultipart():
+                    try:
+                        pp = lin.asMultiPolyline()
+                        for polyline in pp:
+                            if len(polyline) == 0:
+                                continue
 
+                            feature = QgsFeature(fid)
+                            feature.setAttributes([str(fid), -1, prof])
+                            feature.setGeometry(QgsGeometry.fromPolylineXY(polyline))
+                            feats.append(feature)
+                            fid = fid+1
+                    except:
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                        format_exception = traceback.format_exception(exc_type, exc_value, exc_traceback)
+                else:
+                    try:
+                        if lin.isNull():
+                            continue
+
+                        polyline = lin.asPolyline()
+                        if len(polyline) == 0:
+                            continue
+
+                        feature = QgsFeature(fid)
+                        feature.setAttributes([str(fid), -1, prof])
+                        feature.setGeometry(QgsGeometry.fromPolylineXY(polyline))
+                        feats.append(feature)
+                        fid = fid+1
+                    except:
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                        format_exception = traceback.format_exception(exc_type, exc_value, exc_traceback)
+
+            hLayer.dataProvider().addFeatures(feats)
             hLayer.commitChanges()
 
         # POI --------------------------------------------------------------------
