@@ -322,7 +322,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             return prof1
 
         def projLineString(feat, polyline):
-            # reprojet points
+            # reprojet points 
             prof1 = projPolyline(polyline)
 
             if len(polyline) > 1:
