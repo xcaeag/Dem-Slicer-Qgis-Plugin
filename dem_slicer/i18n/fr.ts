@@ -10,7 +10,7 @@
         <source>Build</source>
         <translation>Générer</translation>
     </message>
-    
+
     <message>
         <source>Start</source>
         <translation>Démarrer</translation>
@@ -25,47 +25,47 @@
         <source>Z exageration</source>
         <translation>Accentuer le relief</translation>
     </message>
-    
+
     <message>
         <source>X Step</source>
         <translation>Ecart entre deux mesures d'altitude</translation>
     </message>
-    
+
     <message>
         <source>Z shift</source>
         <translation>Décalage des profils (en hauteur)</translation>
     </message>
-    
+
     <message>
         <source>render lines</source>
         <translation>produire les lignes</translation>
     </message>
-    
+
     <message>
         <source>render polygons</source>
         <translation>produire les polygones</translation>
     </message>
-    
+
     <message>
         <source>render ridges</source>
         <translation>produire les lignes de crête</translation>
     </message>
-    
+
     <message>
         <source>Orthogonal view</source>
         <translation>Vue orthogonale</translation>
     </message>
-    
+
     <message>
         <source>Ornamentation layer</source>
         <translation>couche d'habillage</translation>
     </message>
-    
+
     <message>
         <source>Save parameters</source>
         <translation>Sauver les paramètres</translation>
     </message>
-    
+
     <message>
         <source>L</source>
         <translation>C</translation>
