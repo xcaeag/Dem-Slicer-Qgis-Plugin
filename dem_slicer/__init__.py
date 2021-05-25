@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 /***************************************************************************
  DemSlicer
@@ -33,4 +32,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     """
     #
     from .dem_slicer import DemSlicer
+
     return DemSlicer(iface)

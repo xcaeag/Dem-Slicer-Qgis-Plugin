@@ -352,7 +352,7 @@
       <property name="enabled">
        <bool>false</bool>
       </property>
-      <property name="value"> 
+      <property name="value">
        <number>0</number>
       </property>
      </widget>

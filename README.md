@@ -27,12 +27,12 @@ A 'ridge line' calculation enhances the reliefs.
 
 ## Prerequisites
 - have an altitude raster image. different possible sources: https://dwtkns.com/srtm30m/, https://opendem.info, https://grindgis.com/data/free-world-dem-data
-- to work in a projection whose unit coincides with the altimetric unit of the DEM (3857, WGS 84 / Pseudo-Mercator for example). 
+- to work in a projection whose unit coincides with the altimetric unit of the DEM (3857, WGS 84 / Pseudo-Mercator for example).
 
 ## Examples
 
-### Basic use 
-Choice of the zone (use of the handles), selection of the layer which carries the altitudes, adjustment of some parameters and results  : 
+### Basic use
+Choice of the zone (use of the handles), selection of the layer which carries the altitudes, adjustment of some parameters and results  :
 
 ![Basic use](dem_slicer/help/dem-demo-1.gif)
 
@@ -52,32 +52,32 @@ A line layer or polygons will be cut by the profile lines, each vertex replaced 
 ## The layers produced
 
 ### Lines
-Attributes : 
+Attributes :
 
     "num" - line number. Zero starting at the bottom.
 
 ![layer line](dem_slicer/help/ex_line.png)
 
-### Polygons 
-Attributes : 
+### Polygons
+Attributes :
 
     "num" - polygone number.
 
 ![layer polygon](dem_slicer/help/ex_poly.png)
 
 ### Ridges
-Attributes : 
+Attributes :
 
-    "num" - line number. 
-    "gaz" - number of profiles that this crest hides 
+    "num" - line number.
+    "gaz" - number of profiles that this crest hides
     "prof" - 'depth' of the ridge (0 = close...)
 
 ![layer ridge](dem_slicer/help/ex_ridge.png)
 
 ### Ornementation (points)
-Attributes (added to the attributes of the original layer) : 
+Attributes (added to the attributes of the original layer) :
 
-    "num" - point number. 
+    "num" - point number.
     "z" - calculated altitude.  
     "depth" - distance to observer
     "visi" - visibility in the cutting series (0: hidden, 1: visible)
@@ -123,7 +123,7 @@ The attributes carried by the geometries can be used to adjust styles. For examp
 
 ![ex1](dem_slicer/help/all.png)
 
-Il s'agit d'un outil simple de découpe (en tranches !) de MNT, pour dessiner de jolies cartes postales, à destination des amoureux de reliefs. 
+Il s'agit d'un outil simple de découpe (en tranches !) de MNT, pour dessiner de jolies cartes postales, à destination des amoureux de reliefs.
 
 Le principe est de construire une série de profils d'altitudes (sous forme de lignes ou de polygones), de les juxtaposer pour donner l'illusion d'une vue 3D. Ici, pas de calcul de l'indice de réfraction atmosphérique, pas de prise en compte de la courbure terrestre... juste un peu de géométrie, et les styles font le reste. Les couches résultantes sont positionnées où bon vous semble, le système de coordonnées utilisé est celui de la carte.
 
@@ -133,12 +133,12 @@ Un calcul de 'ligne de crête' rehausse les reliefs.
 
 ## Les prérequis
 - disposer d'un image (raster) d'altitude (MNT). différentes sources possibles : https://dwtkns.com/srtm30m/, https://opendem.info, https://grindgis.com/data/free-world-dem-data
-- de travailler dans une projection dont l'unité coïncide avec l'unité altimétrique du MNT (le mètre par exemple pour la projection Lambert93 ou 3857, pseudo mercator). 
+- de travailler dans une projection dont l'unité coïncide avec l'unité altimétrique du MNT (le mètre par exemple pour la projection Lambert93 ou 3857, pseudo mercator).
 
 ## Exemples
 
-### Un fonctionnement basique. 
-Choix de la zone (utilisation des poignées), sélection de la couche qui porte les altitudes, ajustement de quelques paramètres et résultats  : 
+### Un fonctionnement basique.
+Choix de la zone (utilisation des poignées), sélection de la couche qui porte les altitudes, ajustement de quelques paramètres et résultats  :
 
 ![Démo simple](dem_slicer/help/dem-demo-1.gif)
 
@@ -154,35 +154,35 @@ Une couche de ligne ou polygones sera découpée par les lignes de profils, chaq
 
 ![P.O.I.](dem_slicer/help/dem-demo-3.gif)
 
-## Les couches produites 
+## Les couches produites
 
 ### Lignes
-Attributs : 
+Attributs :
 
     "num" - numéro de la ligne. Le zéro commençant au fond.
 
 ![layer line](dem_slicer/help/ex_line.png)
 
-### Polygones 
-Attributs : 
+### Polygones
+Attributs :
 
     "num" - numéro du polygone. Le zéro commençant au fond.
 
 ![layer polygon](dem_slicer/help/ex_poly.png)
 
 ### Crêtes
-Attributs : 
+Attributs :
 
-    "num" - numéro de la ligne. 
-    "gaz" - nombre de profils que cette crête cache. 
+    "num" - numéro de la ligne.
+    "gaz" - nombre de profils que cette crête cache.
     "prof" - 'profondeur' de la crête (0 = proche...)
 
 ![layer ridge](dem_slicer/help/ex_ridge.png)
 
 ### Ornementation (points)
-Attributs (ajoutés aux attributs de la couche originale) : 
+Attributs (ajoutés aux attributs de la couche originale) :
 
-    "num" - numéro du point. 
+    "num" - numéro du point.
     "z" - altitude calculée.  
     "depth" - distance à l'observateur
     "visi" - visibilité dans la série de coupe (0 : masqué, 1 : visible)
@@ -195,7 +195,7 @@ Nombre de profils : c'est tout simplement le nombre de coupes générées.
 
 ![linecount](dem_slicer/help/dem-demo-linecount.gif)
 
-Ecart entre deux mesures d'altitude : distance entre deux points, le long des profils. 
+Ecart entre deux mesures d'altitude : distance entre deux points, le long des profils.
 
 ![xstep](dem_slicer/help/dem-demo-xstep.gif)
 
@@ -207,15 +207,14 @@ Accentuation du relief : Exagération du relief (multiplication).
 
 ![zfactor](dem_slicer/help/dem-demo-zfactor.gif)
 
-Obs : Altitude de l'observateur par rapport au sol. Comme le 'décalage en z', influ sur le décalage vertical des coupes, en plus fidèle à la réalité. 
+Obs : Altitude de l'observateur par rapport au sol. Comme le 'décalage en z', influ sur le décalage vertical des coupes, en plus fidèle à la réalité.
 
 ![elevation](dem_slicer/help/dem-demo-elevation.gif)
 
 ## Les styles
 
-Couleurs, transparence, texture... tout est possible avec QGis ! 
+Couleurs, transparence, texture... tout est possible avec QGis !
 
 Les attributs que portent les géométries peuvent servir à ajuster les styles. Par exemple, l'épaisseur des lignes de crête peut varier selon le nombre de profils qui sont cachés par la crête (attribut 'gaz') :
 
     scale_linear( coalesce( "gaz", maximum("gaz")/3) , 0, maximum("gaz"), 0.05, 0.8)
-

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 /***************************************************************************
  DemSlicer
@@ -36,23 +35,40 @@ import sys
 import traceback
 from qgis.core import QgsMessageLog, Qgis
 
-MESSAGE_CATEGORY = 'Messages'
+MESSAGE_CATEGORY = "Messages"
 
 
 def enable_remote_debugging():
     try:
         import ptvsd
+
         if ptvsd.is_attached():
-            QgsMessageLog.logMessage("Remote Debug for Visual Studio is already active", MESSAGE_CATEGORY, Qgis.Info)
+            QgsMessageLog.logMessage(
+                "Remote Debug for Visual Studio is already active",
+                MESSAGE_CATEGORY,
+                Qgis.Info,
+            )
             return
-        ptvsd.enable_attach(address=('localhost', 5678))
-        QgsMessageLog.logMessage("dem_slicer attached remote Debug for Visual Studio on port 5678", MESSAGE_CATEGORY, Qgis.Info)
+        ptvsd.enable_attach(address=("localhost", 5678))
+        QgsMessageLog.logMessage(
+            "dem_slicer attached remote Debug for Visual Studio on port 5678",
+            MESSAGE_CATEGORY,
+            Qgis.Info,
+        )
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        format_exception = traceback.format_exception(exc_type, exc_value, exc_traceback)
-        QgsMessageLog.logMessage(repr(format_exception[0]), MESSAGE_CATEGORY, Qgis.Critical)
-        QgsMessageLog.logMessage(repr(format_exception[1]), MESSAGE_CATEGORY, Qgis.Critical)
-        QgsMessageLog.logMessage(repr(format_exception[2]), MESSAGE_CATEGORY, Qgis.Critical)
+        format_exception = traceback.format_exception(
+            exc_type, exc_value, exc_traceback
+        )
+        QgsMessageLog.logMessage(
+            repr(format_exception[0]), MESSAGE_CATEGORY, Qgis.Critical
+        )
+        QgsMessageLog.logMessage(
+            repr(format_exception[1]), MESSAGE_CATEGORY, Qgis.Critical
+        )
+        QgsMessageLog.logMessage(
+            repr(format_exception[2]), MESSAGE_CATEGORY, Qgis.Critical
+        )
 
 
 class DemSlicer:
@@ -75,11 +91,10 @@ class DemSlicer:
         self.plugin_dir = os.path.dirname(__file__)
 
         # initialize locale
-        locale = QSettings().value('locale/userLocale')[0:2]
+        locale = QSettings().value("locale/userLocale")[0:2]
         locale_path = os.path.join(
-            self.plugin_dir,
-            'i18n',
-            'DemSlicer_{}.qm'.format(locale))
+            self.plugin_dir, "i18n", "DemSlicer_{}.qm".format(locale)
+        )
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -88,9 +103,9 @@ class DemSlicer:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&D.E.M. Slicer')
-        self.toolbar = self.iface.addToolBar(u'Dem slicer')
-        self.toolbar.setObjectName(u'DemSlicer')
+        self.menu = self.tr(u"&D.E.M. Slicer")
+        self.toolbar = self.iface.addToolBar(u"Dem slicer")
+        self.toolbar.setObjectName(u"DemSlicer")
 
         self.pluginIsActive = False
         self.dockwidget = None
@@ -106,7 +121,7 @@ class DemSlicer:
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('DemSlicer', message)
+        return QCoreApplication.translate("DemSlicer", message)
 
     def add_action(
         self,
@@ -118,7 +133,7 @@ class DemSlicer:
         add_to_toolbar=True,
         status_tip=None,
         whats_this=None,
-        parent=None
+        parent=None,
     ):
         """Add a toolbar icon to the toolbar.
 
@@ -174,9 +189,7 @@ class DemSlicer:
             self.toolbar.addAction(action)
 
         if add_to_menu:
-            self.iface.addPluginToRasterMenu(
-                self.menu,
-                action)
+            self.iface.addPluginToRasterMenu(self.menu, action)
 
         self.actions.append(action)
 
@@ -185,18 +198,19 @@ class DemSlicer:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/dem_slicer/icon.png'
+        icon_path = ":/plugins/dem_slicer/icon.png"
         self.add_action(
             icon_path,
-            text=self.tr(u'D.E.M. slicer'),
+            text=self.tr(u"D.E.M. slicer"),
             callback=self.run,
-            parent=self.iface.mainWindow())
+            parent=self.iface.mainWindow(),
+        )
 
     # --------------------------------------------------------------------------
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
 
-        #print "** CLOSING DemSlicer"
+        # print "** CLOSING DemSlicer"
 
         # disconnects
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
@@ -213,9 +227,7 @@ class DemSlicer:
         """Removes the plugin menu item and icon from QGIS GUI."""
 
         for action in self.actions:
-            self.iface.removePluginRasterMenu(
-                self.tr(u'&D.E.M. Slicer'),
-                action)
+            self.iface.removePluginRasterMenu(self.tr(u"&D.E.M. Slicer"), action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
