@@ -112,6 +112,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.poiListLabel,
             self.labelElevation,
             self.btnLoad,
+            self.labelBase,
         ]:
             widget.setText(self.tr(widget.text()))
 
@@ -135,6 +136,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.btnLoad,
             self.btnSave,
             self.elevation,
+            self.base,
         ]
 
         self.alert.setText("")
@@ -185,7 +187,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         for w in self.widget2Enable:
             w.setEnabled(True)
-        # self.elevation.setEnabled(not self.parallelView.isChecked())
+        self.elevation.setEnabled(not self.parallelView.isChecked())
 
         self.canvas.setMapTool(self.mt)
 
@@ -260,8 +262,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         :return: new projected z
         """
         # Altitude de la cible par rapport à l'observateur
-        h = zTarget - self.elevation.value() - self.altY
-        return h * ((self.mt.horizon) / depth)
+        if self.parallelView.isChecked():
+            return zTarget
+        else:
+            h = zTarget - self.elevation.value() - self.altY
+            return h * ((self.mt.horizon) / depth)
 
     def getProf(self, depth):
         # distance entre deux profils
@@ -393,8 +398,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     ymin = newY
                 point.setY(newY)
 
-            lineOut.append(QgsPointXY(xmax, ymin))
-            lineOut.append(QgsPointXY(xmin, ymin))
+            lineOut.append(QgsPointXY(xmax, ymin-self.base.value()))
+            lineOut.append(QgsPointXY(xmin, ymin-self.base.value()))
             aPolys.append([lineOut])
 
         self.yMin = ymin
@@ -545,8 +550,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
             aLines.append(QgsGeometry.fromPolylineXY(lineOut))
 
-            lineOut.append(QgsPointXY(xmax, self.yMin))
-            lineOut.append(QgsPointXY(xmin, self.yMin))
+            lineOut.append(QgsPointXY(xmax, self.yMin-self.base.value()))
+            lineOut.append(QgsPointXY(xmin, self.yMin-self.base.value()))
             aPolys.append(QgsGeometry.fromPolygonXY([lineOut]))
 
         # Line Slices --------------------------------------------------------------------
@@ -1034,6 +1039,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def on_xStep_valueChanged(self, v):
         self.mt.updateRubberGeom()
 
+    def on_base_valueChanged(self, v):
+        self.mt.updateRubberGeom()
+
     def on_elevation_valueChanged(self, v):
         self.mt.updateRubberGeom()
 
@@ -1041,7 +1049,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.mt.updateRubberGeom()
 
     def on_parallelView_stateChanged(self, v):
-        # self.elevation.setEnabled(not self.parallelView.isChecked())
+        self.elevation.setEnabled(not self.parallelView.isChecked())
         self.mt.updateRubberGeom()
 
     def on_btnBuild_released(self):
@@ -1095,6 +1103,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             s.setValue("dem_slicer/decoLayerId", poiId)
             s.setValue("dem_slicer/lineCount", self.lineCount.value())
             s.setValue("dem_slicer/elevation", self.elevation.value())
+            s.setValue("dem_slicer/base", self.base.value())
             s.setValue(
                 "dem_slicer/parallelView",
                 "true" if self.parallelView.isChecked() else "false",
@@ -1149,6 +1158,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 self.elevation.setValue(int(s.value("dem_slicer/elevation")))
             except:
                 self.elevation.setValue(0)
+            try:
+                self.base.setValue(int(s.value("dem_slicer/base")))
+            except:
+                self.base.setValue(0)
 
             self.parallelView.setChecked(s.value("dem_slicer/parallelView") == "true")
             self.xStep.setValue(float(s.value("dem_slicer/xStep")))
