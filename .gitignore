@@ -4,3 +4,4 @@ i18n/*.qm
 dem_slicer/*.zip
 dem_slicer/__pycache__
 dev_precommit_black.log
+dem_slicer/deploy.sh
