@@ -6,7 +6,7 @@
 name=D.E.M. Slicer
 qgisMinimumVersion=3.10
 description=D.E.M. slicer, an 'artistic' relief cutting tool
-version=0.3
+version=0.3-beta
 author=Xavier Culos
 email=xavier.culos@gmail.com
 
