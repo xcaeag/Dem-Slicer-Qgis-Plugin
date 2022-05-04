@@ -42,6 +42,11 @@
     </message>
 
     <message>
+        <source>base height</source>
+        <translation>Hauteur de la base</translation>
+    </message>
+    
+    <message>
         <source>render polygons</source>
         <translation>produire les polygones</translation>
     </message>
