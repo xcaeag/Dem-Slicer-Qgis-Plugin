@@ -372,6 +372,9 @@
         <property name="enabled">
          <bool>false</bool>
         </property>
+        <property name="minimum">
+         <number>-99999</number>
+        </property>
         <property name="maximum">
          <number>99999</number>
         </property>
