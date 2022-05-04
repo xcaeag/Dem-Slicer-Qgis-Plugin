@@ -57,7 +57,6 @@ from qgis.core import (
 )
 from qgis.core import (
     QgsFeature,
-    QgsRaster,
     QgsCoordinateTransform,
     QgsFeatureRequest,
     QgsRectangle,
@@ -187,7 +186,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         for w in self.widget2Enable:
             w.setEnabled(True)
-        self.elevation.setEnabled(not self.parallelView.isChecked())
+        # self.elevation.setEnabled(not self.parallelView.isChecked())
 
         self.canvas.setMapTool(self.mt)
 
@@ -213,8 +212,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         :rtype: int
         """
         try:
-            # v = self.mntLayer.dataProvider().identify(point, QgsRaster.IdentifyFormatValue).results().values()
-            # return int(list(v)[0])
             v, ok = self.mntLayer.dataProvider().sample(point, 1)
             return v if ok else 0
         except:
@@ -263,7 +260,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         """
         # Altitude de la cible par rapport à l'observateur
         if self.parallelView.isChecked():
-            return zTarget
+            z = self.elevation.value()
+            # alpha = math.atan(z / depth)
+            # dh = (depth - self.mt.d0) * math.tan(alpha)
+            dh = (depth - self.mt.d0) * ((z+self.altY) / (self.mt.zoneDepth))
+            return zTarget + dh
         else:
             h = zTarget - self.elevation.value() - self.altY
             return h * ((self.mt.horizon) / depth)
@@ -296,7 +297,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     line.insert(2, p)
 
     def getThumbnailGeom(self):
-        dx = self.mt.finalWidth / 10
+        dx = self.mt.finalWidth / 15
         lines = self.mt.getSampleLines()
         geom = QgsGeometry.fromMultiPolylineXY(lines)
         lineCount = len(lines)
@@ -310,8 +311,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 aH = aH + 360
 
             alpha = aH - aD
-            dAlphaDetail = 2 * alpha / (self.mt.finalWidth / self.xStep.value())
-            dAlpha = 2 * alpha / (self.mt.finalWidth / dx)
+            dAlphaDetail = 2.0 * alpha / (self.mt.finalWidth / self.xStep.value())
+            dAlpha = 2.0 * alpha / (self.mt.finalWidth / dx)
 
             aPrim = QgsGeometry.fromPointXY(self.mt.pH)
             aPrim.rotate(-alpha, self.mt.pY)
@@ -1049,7 +1050,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.mt.updateRubberGeom()
 
     def on_parallelView_stateChanged(self, v):
-        self.elevation.setEnabled(not self.parallelView.isChecked())
+        # self.elevation.setEnabled(not self.parallelView.isChecked())
         self.mt.updateRubberGeom()
 
     def on_btnBuild_released(self):

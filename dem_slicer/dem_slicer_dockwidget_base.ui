@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>307</width>
-    <height>514</height>
+    <height>444</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -303,11 +303,11 @@
         <property name="maximum">
          <double>10000.000000000000000</double>
         </property>
+        <property name="singleStep">
+         <double>50.000000000000000</double>
+        </property>
         <property name="value">
          <double>0.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>50</double>
         </property>
        </widget>
       </item>
@@ -394,6 +394,19 @@
        <number>0</number>
       </property>
      </widget>
+    </item>
+    <item row="3" column="0">
+     <spacer name="verticalSpacer_3">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
     </item>
    </layout>
   </widget>
