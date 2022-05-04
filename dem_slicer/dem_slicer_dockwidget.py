@@ -1314,12 +1314,16 @@ class MapTool(QgsMapTool):
         self.rbPeak.setColor(Qt.yellow)
         self.rbPeak.setWidth(6)
 
+        self.rbPeakProj = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
+        self.rbPeakProj.setColor(Qt.darkYellow)
+        self.rbPeakProj.setWidth(4)
+
         # cutting lines
         self.rbLines = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
         self.rbLines.setColor(QColor(40, 180, 30, 255))
         self.rbLines.setWidth(1.5)
 
-        # skylines
+        # thumbnails skylines
         self.rbThumbnail = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
         self.rbThumbnail.setStrokeColor(QColor(200, 120, 70, 150))
         self.rbThumbnail.setWidth(0.8)
@@ -1338,6 +1342,7 @@ class MapTool(QgsMapTool):
             self.rbFoc,
             self.rbThumbnail,
             self.rbPeak,
+            self.rbPeakProj,
         ]
 
     def hide(self):
@@ -1478,6 +1483,8 @@ class MapTool(QgsMapTool):
             self.widget.log(repr(format_exception[0]))
             self.widget.log(repr(format_exception[1]))
             self.widget.log(repr(format_exception[2]))
+
+        # self.rbPeakProj.setToGeometry(self.widget.getPeakGeom(self.pPeak))
 
         nbPoints = int(len(polyline) * (self.finalWidth / self.widget.xStep.value()))
         alert = ""
