@@ -17,16 +17,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@master
 
-      - name: Set output
-        id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Set env
+        run: echo "PLUGIN_TAGNAME=$(echo ${GITHUB_REF_NAME:1})" >> $GITHUB_ENV
 
-      - name: Check output
-        env:
-          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
-        run: |
-          echo $RELEASE_VERSION
-          echo ${{ steps.vars.outputs.tag }}
+      - name: Test tagname
+        run: echo $PLUGIN_TAGNAME
+        run: echo ${{ env.PLUGIN_TAGNAME }}
 
       - name: Setup Python
         uses: actions/setup-python@v2
@@ -47,10 +43,10 @@ jobs:
 
       - name: Package the latest version
         run: |
-          qgis-plugin-ci package $GITHUB_REF_NAME
+          qgis-plugin-ci package $PLUGIN_TAGNAME
 
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.PROJECT_FOLDER }}-${{ github.ref_name }}
-          path: ${{ env.PROJECT_FOLDER }}.${{ github.ref_name }}.zip
+          name: ${{ env.PROJECT_FOLDER }}-${{ env.PLUGIN_TAGNAME }}
+          path: ${{ env.PROJECT_FOLDER }}.${{ env.PLUGIN_TAGNAME }}.zip
           if-no-files-found: error
