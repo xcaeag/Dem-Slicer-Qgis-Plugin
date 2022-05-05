@@ -276,26 +276,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         ixL = round(depth / dd)
         return ixL
 
-    def addDetail(self, polyline, dx):
-        if self.xStep.value() < dx:
-            for line in polyline:
-                p0, p1 = line[0], line[1]
-                p0p1 = p0.distance(p1)
-                x = p1.x() - p0.x()
-                y = p1.y() - p0.y()
-                if self.xStep.value() < p0p1:
-                    p = QgsPointXY(
-                        p0.x() + x * self.xStep.value() / p0p1,
-                        p0.y() + y * self.xStep.value() / p0p1,
-                    )
-                    line.insert(1, p)
-                if 2 * self.xStep.value() < dx and 2 * self.xStep.value() < p0p1:
-                    p = QgsPointXY(
-                        p0.x() + 2 * x * self.xStep.value() / p0p1,
-                        p0.y() + 2 * y * self.xStep.value() / p0p1,
-                    )
-                    line.insert(2, p)
-
     def getProjectionPoint(self, pt):
         # new Y
         d = (self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(pt))) if self.parallelView.isChecked() else self.mt.pY.distance(pt)
@@ -330,7 +310,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         lineCount = len(lines)
         if self.parallelView.isChecked():
             polylineIn = geom.densifyByDistance(dx).asMultiPolyline()
-            self.addDetail(polylineIn, dx)
         else:
             aH = self.mt.pY.azimuth(self.mt.pH)
             aD = self.mt.pY.azimuth(self.mt.pD)
@@ -354,7 +333,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 .asPolyline()
             )
             polyline = []
-            samplePointNumber = 2 + int(self.mt.finalWidth / dx)
+            samplePointNumber = 2 + round(self.mt.finalWidth / dx)
             for p in leftEdge:
                 line = []
 
@@ -377,6 +356,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         g.rotate(dAlpha, self.mt.pY)
                         line.append(g.asPoint())
 
+                # last ?
+                if samplePointNumber * dAlpha < 2.0 * alpha + 0.001:
+                    g = QgsGeometry.fromPointXY(p)
+                    g.rotate(2.0 * alpha, self.mt.pY)
+                    line.append(g.asPoint())
+
                 polyline.append(line)
 
             polylineIn = polyline
@@ -384,7 +369,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         lines = self.mt.getSampleSkylines()
         geom = QgsGeometry.fromMultiPolylineXY(lines)
         polylineOut = geom.densifyByDistance(dx).asMultiPolyline()
-        self.addDetail(polylineOut, dx)
         xmin = geom.boundingBox().xMinimum()
         xmax = geom.boundingBox().xMaximum()
         ymin = geom.boundingBox().yMinimum()
@@ -1288,7 +1272,7 @@ class MapTool(QgsMapTool):
 
         self.rbHorizon = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
         self.rbHorizon.setStrokeColor(QColor(70, 100, 255, 200))
-        self.rbHorizon.setWidth(1)
+        self.rbHorizon.setWidth(2)
 
         self.rbPeakProj = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
         self.rbPeakProj.setColor(QColor(255, 239, 15, 255))
@@ -1529,7 +1513,7 @@ class MapTool(QgsMapTool):
     def getSampleSkylines(self):
         return (
             [self.skyLines[0], self.skyLines[1]]
-            + self.skyLines[2:-1][:: max(1, 1 + int((len(self.skyLines) - 3) / 9))]
+            + self.skyLines[2:-1][:: max(1, 1 + round((len(self.skyLines) - 3) / 9))]
             + [self.skyLines[-1]]
         )
 
