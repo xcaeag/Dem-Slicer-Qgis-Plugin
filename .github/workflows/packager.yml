@@ -21,8 +21,9 @@ jobs:
         run: echo "PLUGIN_TAGNAME=$(echo ${GITHUB_REF_NAME:1})" >> $GITHUB_ENV
 
       - name: Test tagname
-        run: echo $PLUGIN_TAGNAME
-        run: echo ${{ env.PLUGIN_TAGNAME }}
+        run: |
+          echo $PLUGIN_TAGNAME
+          echo ${{ env.PLUGIN_TAGNAME }}
 
       - name: Setup Python
         uses: actions/setup-python@v2
