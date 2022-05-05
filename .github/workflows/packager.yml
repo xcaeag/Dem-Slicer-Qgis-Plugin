@@ -36,10 +36,10 @@ jobs:
 
       - name: Package the latest version
         run: |
-          qgis-plugin-ci package ${GITHUB_REF/refs\/tags\//}
+          qgis-plugin-ci package $CI_COMMIT_TAG
 
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.PROJECT_FOLDER }}-${GITHUB_REF/refs\/tags\//}
-          path: ${{ env.PROJECT_FOLDER }}.${GITHUB_REF/refs\/tags\//}.zip
+          name: ${{ env.PROJECT_FOLDER }}-$CI_COMMIT_TAG
+          path: ${{ env.PROJECT_FOLDER }}.$CI_COMMIT_TAG.zip
           if-no-files-found: error
