@@ -431,7 +431,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             aPolys.append([lineOut])
 
         self.yMin = ymin
-        return QgsGeometry.fromMultiPolygonXY(aPolys)
+        return QgsGeometry.fromPolylineXY(aPolys[0][0][:-2]), QgsGeometry.fromMultiPolygonXY(aPolys)
 
     def getPeakGeom(self, ptPeak):
         ptXY = self.getProjectionPoint(ptPeak)
@@ -1279,11 +1279,16 @@ class MapTool(QgsMapTool):
         self.pR = None
 
         # Rubbers -----------
+        # Ordre de la déclaration = ordre d'affichage
 
         # thumbnails skylines
         self.rbThumbnail = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
         self.rbThumbnail.setStrokeColor(QColor(200, 120, 70, 130))
         self.rbThumbnail.setWidth(0.8)
+
+        self.rbHorizon = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
+        self.rbHorizon.setStrokeColor(QColor(70, 100, 255, 200))
+        self.rbHorizon.setWidth(1)
 
         self.rbPeakProj = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
         self.rbPeakProj.setColor(QColor(255, 239, 15, 255))
@@ -1355,6 +1360,7 @@ class MapTool(QgsMapTool):
             self.rbPL,
             self.rbFoc,
             self.rbThumbnail,
+            self.rbHorizon,
         ]
 
     def hide(self):
@@ -1491,16 +1497,13 @@ class MapTool(QgsMapTool):
         self.skyLines = polyline
 
         try:
-            self.rbThumbnail.setToGeometry(self.widget.getThumbnailGeom())
+            horizon, thumbnail = self.widget.getThumbnailGeom()
+            self.rbThumbnail.setToGeometry(thumbnail)
+            self.rbHorizon.setToGeometry(horizon)
         except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            format_exception = traceback.format_exception(
-                exc_type, exc_value, exc_traceback
-            )
-            self.widget.log(repr(format_exception[0]))
-            self.widget.log(repr(format_exception[1]))
-            self.widget.log(repr(format_exception[2]))
+            raise
 
+        # alert
         nbPoints = int(len(polyline) * (self.finalWidth / self.widget.xStep.value()))
         alert = ""
         if nbPoints > 100000:
