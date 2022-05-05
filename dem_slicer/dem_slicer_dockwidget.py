@@ -63,8 +63,7 @@ from qgis.core import (
 )
 from qgis.gui import QgsRubberBand, QgsMapTool
 import math
-import sys
-import traceback
+import inspect
 
 FORM_CLASS, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "dem_slicer_dockwidget_base.ui")
@@ -153,7 +152,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         )
 
     def log(self, message):
-        QgsMessageLog.logMessage(message, "Extensions")
+        QgsMessageLog.logMessage(str(message), "Extensions")
 
     def start(self):
         """Start the processus : activates tools, builds rubber bands..."""
@@ -214,7 +213,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         try:
             v, ok = self.mntLayer.dataProvider().sample(point, 1)
             return v if ok else 0
-        except:
+        except Exception:
             return 0
 
     def getGaz(self, pt1, pt2, polys, prof):
@@ -450,12 +449,16 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         def projLineString(feat, polyline):
             # reprojet points
-            prof1 = self.projPolyline(polyline)
-
+            self.projPolyline(polyline)
             if len(polyline) > 1:
-                visi = self.getVisibility(polyline[1], aPolys, prof1)
+                if self.parallelView.isChecked():
+                    depth = self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(polyline[0]))
+                else:
+                    depth = self.mt.pY.distance(polyline[0])
+                prof = self.getProf(depth)
+                visi = self.getVisibility(polyline[1], aPolys, prof)
                 fet0 = QgsFeature(fid)
-                fet0.setAttributes(feat.attributes() + [str(fid), visi, prof1])
+                fet0.setAttributes(feat.attributes() + [str(fid), visi, prof])
                 fet0.setGeometry(QgsGeometry.fromPolylineXY(polyline))
                 return fet0
             else:
@@ -463,18 +466,23 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         def projPolygon(feat, polygon):
             # reprojet points
-            prof1 = 0
+            prof = 0
             self.log("in projPolyline, altY = {}".format(self.altY))
             for polyline in polygon:
-                prof1 = self.projPolyline(polyline)
+                self.projPolyline(polyline)
+                if self.parallelView.isChecked():
+                    depth = self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(polyline[0]))
+                else:
+                    depth = self.mt.pY.distance(polyline[0])
+                prof = self.getProf(depth)
 
             try:
-                visi = self.getVisibility(polygon[0][1], aPolys, prof1)
+                visi = self.getVisibility(polygon[0][1], aPolys, prof)
                 fet0 = QgsFeature(fid)
-                fet0.setAttributes(feat.attributes() + [str(fid), visi, prof1])
+                fet0.setAttributes(feat.attributes() + [str(fid), visi, prof])
                 fet0.setGeometry(QgsGeometry.fromPolygonXY(polygon))
                 return fet0
-            except:
+            except Exception:
                 return None
 
         # initial bbox ... lines
@@ -703,11 +711,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 feats.append(feature)
                                 fid = fid + 1
                                 pt0 = pt
-                    except:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        format_exception = traceback.format_exception(
-                            exc_type, exc_value, exc_traceback
-                        )
+                    except Exception as e:
+                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log(e)
                 else:
                     try:
                         if lin.isNull():
@@ -728,20 +734,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                             feats.append(feature)
                             fid = fid + 1
                             pt0 = pt
-                    except:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        format_exception = traceback.format_exception(
-                            exc_type, exc_value, exc_traceback
-                        )
-                        """
-                        self.log(repr(format_exception[0]))
-                        self.log(repr(format_exception[1]))
-                        self.log(repr(format_exception[2]))
-                        """
+                    except Exception as e:
+                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log(e)
 
             # lignes sous horizons
             for prof, lin in enumerate(hiddens):
-                # self.log(prof)
                 if lin.isMultipart():
                     try:
                         pp = lin.asMultiPolyline()
@@ -754,11 +752,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                             feature.setGeometry(QgsGeometry.fromPolylineXY(polyline))
                             feats.append(feature)
                             fid = fid + 1
-                    except:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        format_exception = traceback.format_exception(
-                            exc_type, exc_value, exc_traceback
-                        )
+                    except Exception as e:
+                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log(e)
                 else:
                     try:
                         if lin.isNull():
@@ -773,11 +769,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         feature.setGeometry(QgsGeometry.fromPolylineXY(polyline))
                         feats.append(feature)
                         fid = fid + 1
-                    except:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        format_exception = traceback.format_exception(
-                            exc_type, exc_value, exc_traceback
-                        )
+                    except Exception as e:
+                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log(e)
 
             hLayer.dataProvider().addFeatures(feats)
             hLayer.commitChanges()
@@ -891,6 +885,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     layer.loadNamedStyle(self.plugin_dir + "/poi.qml")
                     layer.commitChanges()
 
+            # Projeter des lignes ou polygones
             if (
                 poiLayer.wkbType() == QgsWkbTypes.LineString
                 or poiLayer.wkbType() == QgsWkbTypes.MultiLineString
@@ -919,22 +914,16 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 if fet is not None:
                                     feats.append(fet)
                                     fid = fid + 1
-                            except:
+                            except Exception:
                                 collec = geom.asGeometryCollection()
                                 for geom in collec:
                                     fet = projLineString(feat, geom.asPolyline())
                                     if fet is not None:
                                         feats.append(fet)
                                         fid = fid + 1
-                    except:
-                        raise
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        format_exception = traceback.format_exception(
-                            exc_type, exc_value, exc_traceback
-                        )
-                        self.log(repr(format_exception[0]))
-                        self.log(repr(format_exception[1]))
-                        self.log(repr(format_exception[2]))
+                    except Exception as e:
+                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log(e)
 
                 if len(feats) > 0:
                     layer = QgsVectorLayer(
@@ -988,21 +977,16 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 if fet is not None:
                                     feats.append(fet)
                                     fid = fid + 1
-                            except:
+                            except Exception:
                                 collec = geom.asGeometryCollection()
                                 for geom in collec:
                                     fet = projPolygon(feat, geom.asPolygon())
                                     if fet is not None:
                                         feats.append(fet)
                                         fid = fid + 1
-                    except:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        format_exception = traceback.format_exception(
-                            exc_type, exc_value, exc_traceback
-                        )
-                        self.log(repr(format_exception[0]))
-                        self.log(repr(format_exception[1]))
-                        self.log(repr(format_exception[2]))
+                    except Exception as e:
+                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log(e)
 
                 if len(feats) > 0:
                     layer = QgsVectorLayer(
@@ -1084,7 +1068,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.xMap2Raster = QgsCoordinateTransform(
                 mapcrs, self.mntLayer.crs(), QgsProject.instance()
             )
-        except:
+        except Exception:
             pass
 
     def on_btnSave_released(self):
@@ -1176,11 +1160,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.lineCount.setValue(int(s.value("dem_slicer/lineCount")))
             try:
                 self.elevation.setValue(int(s.value("dem_slicer/elevation")))
-            except:
+            except Exception:
                 self.elevation.setValue(0)
             try:
                 self.base.setValue(int(s.value("dem_slicer/base")))
-            except:
+            except Exception:
                 self.base.setValue(0)
 
             self.parallelView.setChecked(s.value("dem_slicer/parallelView") == "true")
@@ -1219,7 +1203,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     round(self.altY, int(2 - math.log10(self.altY)))
                 )
             )
-        except:
+        except Exception:
             self.labelElevation.setText("Obs. : {} m   +".format(self.altY))
 
 
@@ -1484,8 +1468,9 @@ class MapTool(QgsMapTool):
             horizon, thumbnail = self.widget.getThumbnailGeom()
             self.rbThumbnail.setToGeometry(thumbnail)
             self.rbHorizon.setToGeometry(horizon)
-        except:
-            raise
+        except Exception as e:
+            self.widget.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+            self.widget.log(e)
 
         # alert
         nbPoints = int(len(polyline) * (self.finalWidth / self.widget.xStep.value()))
@@ -1680,9 +1665,7 @@ class MapTool(QgsMapTool):
         if self.mode == self.MODE_SCALE_X:
             d_old = self.pL_init.distance(self.pX_init)
             d_new = pt.distance(self.pX_init)
-            dd = d_new / d_old
-            if dd < 0.001:
-                dd = 0.001
+            dd = min(max(d_new / d_old, 0.005), 10)
 
             dx = dd * (self.pL_init.x() - self.pX.x())
             dy = dd * (self.pL_init.y() - self.pX.y())
@@ -1708,8 +1691,7 @@ class MapTool(QgsMapTool):
             d_old = self.pH_init.distance(self.pX_init)
             d_new = pt.distance(self.pX_init)
             dd = d_new / d_old
-            if dd < 0.001:
-                dd = 0.001
+            dd = min(max(d_new / d_old, 0.005), 10)
 
             dx = dd * (self.pH_init.x() - self.pX.x())
             dy = dd * (self.pH_init.y() - self.pX.y())
