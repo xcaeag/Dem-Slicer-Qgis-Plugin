@@ -296,6 +296,33 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     )
                     line.insert(2, p)
 
+    def getProjectionPoint(self, pt):
+        # new Y
+        d = (self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(pt))) if self.parallelView.isChecked() else self.mt.pY.distance(pt)
+        z = self.getElevation(self.xMap2Raster.transform(pt.x(), pt.y()))
+        newZ = self.getNewZ(z, d)
+        zf = self.zFactor.value()
+        newY = (
+            self.mt.pR.y()
+            + (newZ * zf)
+            + (d * self.zShift.value() / self.mt.zoneDepth)
+        )
+
+        # new X
+        if self.parallelView.isChecked():
+            newX = self.mt.pR.x() + self.mt.segAD.distance(QgsGeometry.fromPointXY(pt))
+        else:
+            aLeft = self.mt.pY.azimuth(self.mt.pD)
+            aRight = self.mt.pY.azimuth(self.mt.pC)
+            if aRight < aLeft:
+                aRight = aRight + 360
+            aPeak = self.mt.pY.azimuth(pt)
+            if aPeak < aLeft:
+                aPeak = aPeak + 360
+            newX = self.mt.pR.x() + ((aPeak-aLeft)/(aRight-aLeft))*self.mt.finalWidth
+
+        return QgsPointXY(newX, newY)
+
     def getThumbnailGeom(self):
         dx = self.mt.finalWidth / 15
         lines = self.mt.getSampleLines()
@@ -406,32 +433,15 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.yMin = ymin
         return QgsGeometry.fromMultiPolygonXY(aPolys)
 
-    def projPolyline(self, polyline, aD, angleVue):
-        segAD = QgsGeometry.fromPolylineXY([self.mt.pA, self.mt.pD])
+    def getPeakGeom(self, ptPeak):
+        ptXY = self.getProjectionPoint(ptPeak)
+        return QgsGeometry.fromPointXY(ptXY)
+
+    def projPolyline(self, polyline):
         for i, pt in enumerate(polyline):
-            z = self.getElevation(self.xMap2Raster.transform(pt.x(), pt.y()))
-
-            if self.parallelView.isChecked():
-                d = self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(pt))
-                newX = self.mt.pR.x() + segAD.distance(QgsGeometry.fromPointXY(pt))
-            else:
-                d = self.mt.pY.distance(pt)
-                az = self.mt.pY.azimuth(pt)
-
-                if aD > az:
-                    az = az + 360
-                fx = (az - aD) / angleVue
-                newX = self.mt.pR.x() + fx * self.mt.finalWidth
-
-            newZ = self.getNewZ(z, d)
-            newY = (
-                self.mt.pR.y()
-                + (newZ * self.zFactor.value())
-                + (d * self.zShift.value() / self.mt.zoneDepth)
-            )
-
-            polyline[i].setX(newX)
-            polyline[i].setY(newY)
+            ptXY = self.getProjectionPoint(pt)
+            polyline[i].setX(ptXY.x())
+            polyline[i].setY(ptXY.y())
 
     def buildLayer(self, layer, aLines, progress):
         layer.startEditing()
@@ -456,7 +466,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         def projLineString(feat, polyline):
             # reprojet points
-            prof1 = self.projPolyline(polyline, aD, angleVue)
+            prof1 = self.projPolyline(polyline)
 
             if len(polyline) > 1:
                 visi = self.getVisibility(polyline[1], aPolys, prof1)
@@ -472,7 +482,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             prof1 = 0
             self.log("in projPolyline, altY = {}".format(self.altY))
             for polyline in polygon:
-                prof1 = self.projPolyline(polyline, aD, angleVue)
+                prof1 = self.projPolyline(polyline)
 
             try:
                 visi = self.getVisibility(polygon[0][1], aPolys, prof1)
@@ -1268,6 +1278,17 @@ class MapTool(QgsMapTool):
         # result placement
         self.pR = None
 
+        # Rubbers -----------
+
+        # thumbnails skylines
+        self.rbThumbnail = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
+        self.rbThumbnail.setStrokeColor(QColor(200, 120, 70, 130))
+        self.rbThumbnail.setWidth(0.8)
+
+        self.rbPeakProj = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
+        self.rbPeakProj.setColor(QColor(255, 239, 15, 255))
+        self.rbPeakProj.setWidth(4)
+
         # rectangle
         self.rb = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
         self.rb.setStrokeColor(Qt.blue)
@@ -1276,6 +1297,11 @@ class MapTool(QgsMapTool):
         self.rbFoc = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
         self.rbFoc.setStrokeColor(Qt.blue)
         self.rbFoc.setWidth(1)
+
+        # cutting lines
+        self.rbLines = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
+        self.rbLines.setColor(QColor(40, 180, 30, 255))
+        self.rbLines.setWidth(1.5)
 
         # SCALE nodes
         self.rbPA = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
@@ -1288,7 +1314,7 @@ class MapTool(QgsMapTool):
         self.rbPC.setColor(Qt.red)
         self.rbPC.setWidth(8)
         self.rbPD = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPD.setColor(QColor(255, 50, 150, 255))
+        self.rbPD.setColor(Qt.red)
         self.rbPD.setWidth(8)
         # scale Y node
         self.rbPH = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
@@ -1311,22 +1337,8 @@ class MapTool(QgsMapTool):
 
         # PEAK
         self.rbPeak = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPeak.setColor(Qt.yellow)
+        self.rbPeak.setColor(QColor(255, 239, 15, 255))
         self.rbPeak.setWidth(6)
-
-        self.rbPeakProj = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPeakProj.setColor(Qt.darkYellow)
-        self.rbPeakProj.setWidth(4)
-
-        # cutting lines
-        self.rbLines = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
-        self.rbLines.setColor(QColor(40, 180, 30, 255))
-        self.rbLines.setWidth(1.5)
-
-        # thumbnails skylines
-        self.rbThumbnail = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
-        self.rbThumbnail.setStrokeColor(QColor(200, 120, 70, 150))
-        self.rbThumbnail.setWidth(0.8)
 
         self.rubbers = [
             self.rb,
@@ -1335,14 +1347,14 @@ class MapTool(QgsMapTool):
             self.rbPC,
             self.rbPD,
             self.rbPY,
+            self.rbPeak,
+            self.rbPan,
+            self.rbPeakProj,
             self.rbLines,
             self.rbPH,
             self.rbPL,
-            self.rbPan,
             self.rbFoc,
             self.rbThumbnail,
-            self.rbPeak,
-            self.rbPeakProj,
         ]
 
     def hide(self):
@@ -1352,6 +1364,9 @@ class MapTool(QgsMapTool):
     def updateRubberGeom(self):
         if self.pA is None:
             return
+
+        self.segCD = QgsGeometry.fromPolylineXY([self.pC, self.pD])
+        self.segAD = QgsGeometry.fromPolylineXY([self.pA, self.pD])
 
         self.zoneWidth = self.pA.distance(self.pB)
         self.zoneDepth = self.pA.distance(self.pD)
@@ -1464,6 +1479,8 @@ class MapTool(QgsMapTool):
         )
 
         # final result
+        self.rbPeakProj.setToGeometry(self.widget.getPeakGeom(self.pPeak))
+
         polyline = []
         nbLines = self.widget.lineCount.value()
         for _ in range(nbLines)[::-1]:
@@ -1483,8 +1500,6 @@ class MapTool(QgsMapTool):
             self.widget.log(repr(format_exception[0]))
             self.widget.log(repr(format_exception[1]))
             self.widget.log(repr(format_exception[2]))
-
-        # self.rbPeakProj.setToGeometry(self.widget.getPeakGeom(self.pPeak))
 
         nbPoints = int(len(polyline) * (self.finalWidth / self.widget.xStep.value()))
         alert = ""
@@ -1544,6 +1559,7 @@ class MapTool(QgsMapTool):
         self.pC = QgsPointXY(rubberExtent.xMaximum(), rubberExtent.yMinimum())
         self.pD = QgsPointXY(rubberExtent.xMinimum(), rubberExtent.yMinimum())
         self.segCD = QgsGeometry.fromPolylineXY([self.pC, self.pD])
+        self.segAD = QgsGeometry.fromPolylineXY([self.pA, self.pD])
 
         # handles H / L
         self.pH = QgsPointXY(
