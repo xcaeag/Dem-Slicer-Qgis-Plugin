@@ -1501,9 +1501,7 @@ class MapTool(QgsMapTool):
     def getSampleLines(self):
         return (
             [self.cuttingLines[0], self.cuttingLines[1]]
-            + self.cuttingLines[2:-1][
-                :: max(1, 1 + int((len(self.cuttingLines) - 3) / 9))
-            ]
+            + self.cuttingLines[2:-1][:: max(1, 1 + round((len(self.cuttingLines) - 3) / 9))]
             + [self.cuttingLines[-1]]
         )
 
