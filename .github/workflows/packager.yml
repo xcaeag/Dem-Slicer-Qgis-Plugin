@@ -36,7 +36,7 @@ jobs:
 
       - name: Package the latest version
         run: |
-          qgis-plugin-ci package ${{ env.GITHUB_REF_NAME }}
+          qgis-plugin-ci package $GITHUB_REF_NAME
 
       - uses: actions/upload-artifact@v2
         with:
