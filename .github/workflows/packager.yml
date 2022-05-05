@@ -40,6 +40,6 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.PROJECT_FOLDER }}-${{ GITHUB_REF/refs\/tags\// }}
-          path: ${{ env.PROJECT_FOLDER }}.${{ GITHUB_REF/refs\/tags\// }}.zip
+          name: ${{ env.PROJECT_FOLDER }}-${GITHUB_REF/refs\/tags\//}
+          path: ${{ env.PROJECT_FOLDER }}.${GITHUB_REF/refs\/tags\//}.zip
           if-no-files-found: error
