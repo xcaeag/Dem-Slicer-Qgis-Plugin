@@ -28,7 +28,7 @@ tags=vector, topography, profile, polyline, dem, mnt
 
 homepage=https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin
 category=Raster
-icon=icon.png
+icon=resources/icon.png
 # experimental flag
 experimental=True
 
