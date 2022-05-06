@@ -19,16 +19,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-
-     A------H-------B
-     |              |
-     |              L
-     |              |
-     D------M-------C
-     \      |      /
-       \    d0   /
-         \  |  /
-            Y
 """
 
 import os
@@ -1266,30 +1256,11 @@ class MapTool(QgsMapTool):
         # clicked point
         self.p0 = None
 
-        # centre rectangle
-        self.pX = None
+        self.points = {'X':None, 'A':None, 'B':None,'C':None,'D':None,'Y':None,'Z':None,'K':None,'M':None, 'R':None, 'Peak':None }
 
         # rectangle vertices (handles)
-        self.pA = None  # hg
-        self.pB = None  # hd
-        self.pC = None  # bd
-        self.pD = None  # bg
         self.zoneWidth = None
         self.zoneDepth = None
-
-        # mode perspective Z & K (handles)
-        self.pZ, self.pK = None, None
-
-        self.pM = None
-
-        # eye (rotation)
-        self.pY = None
-
-        # peak (sample)
-        self.pPeak = None
-
-        # result placement
-        self.pR = None
 
         # Rubbers -----------
         self.rubbers = []
@@ -1323,6 +1294,11 @@ class MapTool(QgsMapTool):
         self.rbPZ = self.addRubber(QgsWkbTypes.PointGeometry, Qt.red, 6)
         self.rbPK = self.addRubber(QgsWkbTypes.PointGeometry, Qt.red, 6)
         self.rbPM = self.addRubber(QgsWkbTypes.PointGeometry, Qt.red, 6)
+
+        self.handles = [
+            [self.pB, self.rbPB, self.MODE_B_ROTATE],
+            [self.pY, self.rbPY, self.MODE_Y_ROTATE]
+        ]
 
     def hide(self):
         for rb in self.rubbers:
@@ -1573,38 +1549,33 @@ class MapTool(QgsMapTool):
         self.updateRubberGeom()
 
     def canvasPressEvent(self, event):
+        DIST = 5
         x = event.pos().x()
         y = event.pos().y()
         self.p0 = self.canvas.getCoordinateTransform().toMapCoordinates(x, y)
 
-        distPB = self.p0.distance(self.pB) / self.canvas.mapUnitsPerPixel()
-        distPY = self.p0.distance(self.pY) / self.canvas.mapUnitsPerPixel()
+        for pt, _, mode in self.handles:
+            if self.p0.distance(pt) / self.canvas.mapUnitsPerPixel():
+                return mode
+
         distPPeak = self.p0.distance(self.pPeak) / self.canvas.mapUnitsPerPixel()
         distPH = self.p0.distance(self.pH) / self.canvas.mapUnitsPerPixel()
         distPL = self.p0.distance(self.pL) / self.canvas.mapUnitsPerPixel()
         distPR = self.p0.distance(self.pR) / self.canvas.mapUnitsPerPixel()
 
-        if distPB < 6:
-            self.mode = self.MODE_SCALE
-            return
-
-        if distPH < 6:
+        if distPH < DIST:
             self.mode = self.MODE_SCALE_Y
             return
 
-        if distPL < 6:
+        if distPL < DIST:
             self.mode = self.MODE_SCALE_X
             return
 
-        if distPY < 6:
-            self.mode = self.MODE_ROTATE
-            return
-
-        if distPR < 6:
+        if distPR < DIST:
             self.mode = self.MODE_PAN_RESULT
             return
 
-        if distPPeak < 6:
+        if distPPeak < DIST:
             self.mode = self.MODE_PEAK
             return
 
