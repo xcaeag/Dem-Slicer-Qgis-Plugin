@@ -1207,6 +1207,31 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.labelElevation.setText("Obs. : {} m   +".format(self.altY))
 
 
+"""
+Outils de manipulation de l'emprise et affichage d'un échantillon
+
+        mode ortho             non ortho
+
+     A------H-------B     .---A----H----B----Z
+     |              |      \                /  
+     |  S   X       L       \   S  X       K
+     |              |        \            /                  ~~~~~~~~~~~~~~~~
+     D------M-------C         D----M----C        ->          ~~~~~~~~~~~~~~~~
+     \      |      /           \   |   /                     R ~~~~~~~~~~~~~~
+       \    d0   /              \ d0  /
+         \  |  /                 \ | /
+            Y                      Y 
+
+Les manipulations possibles : 
+- déplacement de l'observateur (Y) [DC] reste constant, rotation autour de S (sommet)
+- déplacement de l'horizon AB (H) sur droite YH : M reste en place
+- déplacement 1er profil CD (M) sur droite YH: H reste en place
+- élargissement (L) largeur en mode ortho ou (K) angle
+- rotation centre Y (B) ou (Z)
+
+les poignées visibles : Y (obs), H, M, L, K, B, Z
+
+"""
 class MapTool(QgsMapTool):
     MODE_NONE = 0
     MODE_PAN = 1
@@ -1216,6 +1241,21 @@ class MapTool(QgsMapTool):
     MODE_SCALE_Y = 5
     MODE_PAN_RESULT = 6
     MODE_PEAK = 7
+
+    MODE_Y_ROTATE = 10
+    MODE_H_HORIZON = 11
+    MODE_M_FIRST = 12
+    MODE_L_LARG = 13
+    MODE_K_ANGLE = 14
+    MODE_B_ROTATE = 15
+    MODE_Z_ROTATE = 16
+
+    def addRubber(self, typ, color, w):
+        r = QgsRubberBand(self.canvas, typ)
+        r.setStrokeColor(color)
+        r.setWidth(w)
+        self.rubbers.append(r)
+        return r
 
     def __init__(self, widget):
         QgsMapTool.__init__(self, widget.canvas)
@@ -1237,6 +1277,11 @@ class MapTool(QgsMapTool):
         self.zoneWidth = None
         self.zoneDepth = None
 
+        # mode perspective Z & K (handles)
+        self.pZ, self.pK = None, None
+
+        self.pM = None
+
         # eye (rotation)
         self.pY = None
 
@@ -1247,89 +1292,37 @@ class MapTool(QgsMapTool):
         self.pR = None
 
         # Rubbers -----------
+        self.rubbers = []
         # Ordre de la déclaration = ordre d'affichage
 
-        # thumbnails skylines
-        self.rbThumbnail = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
-        self.rbThumbnail.setStrokeColor(QColor(200, 120, 70, 130))
-        self.rbThumbnail.setWidth(0.8)
-
-        self.rbHorizon = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
-        self.rbHorizon.setStrokeColor(QColor(70, 100, 255, 200))
-        self.rbHorizon.setWidth(2)
-
-        self.rbPeakProj = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPeakProj.setColor(QColor(255, 239, 15, 255))
-        self.rbPeakProj.setWidth(4)
-
-        # rectangle
-        self.rb = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
-        self.rb.setStrokeColor(Qt.blue)
-        self.rb.setWidth(3)
-
-        self.rbFoc = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
-        self.rbFoc.setStrokeColor(Qt.blue)
-        self.rbFoc.setWidth(1)
-
+        # thumbnails skylines - profil échantillon projeté
+        self.rbThumbnail = self.addRubber(QgsWkbTypes.PolygonGeometry, QColor(200, 120, 70, 130), 0.8)
+        # last line (blue)
+        self.rbHorizon = self.addRubber(QgsWkbTypes.PolygonGeometry, QColor(70, 100, 255, 200), 2)
+        # peak projection
+        self.rbPeakProj = self.addRubber(QgsWkbTypes.PointGeometry, QColor(255, 239, 15, 200), 4)
+        # rectangle or cone
+        self.rb = self.addRubber(QgsWkbTypes.PolygonGeometry, QColor(70, 100, 255, 200), 3)
+        # view angle
+        self.rbFoc = self.addRubber(QgsWkbTypes.LineGeometry, Qt.blue, 1)
         # cutting lines
-        self.rbLines = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
-        self.rbLines.setColor(QColor(40, 180, 30, 255))
-        self.rbLines.setWidth(1.5)
-
+        self.rbLines = self.addRubber(QgsWkbTypes.LineGeometry, QColor(40, 180, 30, 200), 1.5)
         # SCALE nodes
-        self.rbPA = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPA.setColor(Qt.red)
-        self.rbPA.setWidth(8)
-        self.rbPB = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPB.setColor(Qt.red)
-        self.rbPB.setWidth(8)
-        self.rbPC = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPC.setColor(Qt.red)
-        self.rbPC.setWidth(8)
-        self.rbPD = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPD.setColor(Qt.red)
-        self.rbPD.setWidth(8)
+        self.rbPB = self.addRubber(QgsWkbTypes.PointGeometry, Qt.red, 6)
         # scale Y node
-        self.rbPH = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPH.setColor(Qt.red)
-        self.rbPH.setWidth(8)
+        self.rbPH = self.addRubber(QgsWkbTypes.PointGeometry, Qt.red, 6)
         # scale X node
-        self.rbPL = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPL.setColor(Qt.red)
-        self.rbPL.setWidth(8)
-
+        self.rbPL = self.addRubber(QgsWkbTypes.PointGeometry, Qt.red, 6)
         # final pan
-        self.rbPan = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPan.setColor(QColor(200, 120, 50, 255))
-        self.rbPan.setWidth(8)
-
+        self.rbPan = self.addRubber(QgsWkbTypes.PointGeometry, QColor(200, 120, 50, 200), 6)
         # ROTATE node (eye)
-        self.rbPY = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPY.setColor(Qt.blue)
-        self.rbPY.setWidth(6)
-
+        self.rbPY = self.addRubber(QgsWkbTypes.PointGeometry, Qt.blue, 6)
         # PEAK
-        self.rbPeak = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        self.rbPeak.setColor(QColor(255, 239, 15, 255))
-        self.rbPeak.setWidth(6)
-
-        self.rubbers = [
-            self.rb,
-            self.rbPA,
-            self.rbPB,
-            self.rbPC,
-            self.rbPD,
-            self.rbPY,
-            self.rbPeak,
-            self.rbPan,
-            self.rbPeakProj,
-            self.rbLines,
-            self.rbPH,
-            self.rbPL,
-            self.rbFoc,
-            self.rbThumbnail,
-            self.rbHorizon,
-        ]
+        self.rbPeak = self.addRubber(QgsWkbTypes.PointGeometry, QColor(255, 239, 15, 200), 6)
+        # perspective handles
+        self.rbPZ = self.addRubber(QgsWkbTypes.PointGeometry, Qt.red, 6)
+        self.rbPK = self.addRubber(QgsWkbTypes.PointGeometry, Qt.red, 6)
+        self.rbPM = self.addRubber(QgsWkbTypes.PointGeometry, Qt.red, 6)
 
     def hide(self):
         for rb in self.rubbers:
@@ -1338,6 +1331,10 @@ class MapTool(QgsMapTool):
     def updateRubberGeom(self):
         if self.pA is None:
             return
+
+        self.hide()
+
+        # les poignées visibles : Y (obs), H, M, L ou K, B ou Z
 
         self.segCD = QgsGeometry.fromPolylineXY([self.pC, self.pD])
         self.segAD = QgsGeometry.fromPolylineXY([self.pA, self.pD])
@@ -1351,25 +1348,28 @@ class MapTool(QgsMapTool):
         self.horizon = self.pH.distance(self.pY)
         self.widget.updateZ(self.pY)
 
-        self.rb.setToGeometry(
-            QgsGeometry.fromPolygonXY([[self.pD, self.pA, self.pB, self.pC, self.pD]])
-        )
         self.rbFoc.setToGeometry(
             QgsGeometry.fromPolylineXY([self.pD, self.pY, self.pC])
         )
 
         for p, rb in [
-            [self.pA, self.rbPA],
-            [self.pB, self.rbPB],
-            [self.pC, self.rbPC],
-            [self.pD, self.rbPD],
             [self.pY, self.rbPY],
             [self.pH, self.rbPH],
-            [self.pL, self.rbPL],
             [self.pR, self.rbPan],
+            [self.pM, self.rbPM],
             [self.pPeak, self.rbPeak],
         ]:
             rb.setToGeometry(QgsGeometry.fromPointXY(p))
+
+        if self.widget.parallelView.isChecked():
+            self.rb.setToGeometry(
+                QgsGeometry.fromPolygonXY([[self.pD, self.pA, self.pB, self.pC, self.pD]])
+            )
+            for p, rb in [
+                [self.pB, self.rbPB],
+                [self.pL, self.rbPL],
+            ]:
+                rb.setToGeometry(QgsGeometry.fromPointXY(p))
 
         leftEdge = (
             QgsGeometry.fromPolylineXY([self.pA, self.pD])
@@ -1551,6 +1551,10 @@ class MapTool(QgsMapTool):
 
         self.pR = QgsPointXY(self.pD.x() + width / 2, self.pD.y() + height / 2)
 
+        # TODO
+        self.pK = self.pL
+        self.pZ = self.pB
+
         self.rotation_init = self.rotation
         self.pA_init = QgsPointXY(self.pA)
         self.pB_init = QgsPointXY(self.pB)
@@ -1562,6 +1566,9 @@ class MapTool(QgsMapTool):
         self.pH_init = QgsPointXY(self.pH)
         self.pL_init = QgsPointXY(self.pL)
         self.pR_init = QgsPointXY(self.pR)
+        self.pM_init = QgsPointXY(self.pM)
+        self.pK_init = QgsPointXY(self.pK)
+        self.pZ_init = QgsPointXY(self.pZ)
 
         self.updateRubberGeom()
 
@@ -1570,17 +1577,14 @@ class MapTool(QgsMapTool):
         y = event.pos().y()
         self.p0 = self.canvas.getCoordinateTransform().toMapCoordinates(x, y)
 
-        distPA = self.p0.distance(self.pA) / self.canvas.mapUnitsPerPixel()
         distPB = self.p0.distance(self.pB) / self.canvas.mapUnitsPerPixel()
-        distPC = self.p0.distance(self.pC) / self.canvas.mapUnitsPerPixel()
-        distPD = self.p0.distance(self.pD) / self.canvas.mapUnitsPerPixel()
         distPY = self.p0.distance(self.pY) / self.canvas.mapUnitsPerPixel()
         distPPeak = self.p0.distance(self.pPeak) / self.canvas.mapUnitsPerPixel()
         distPH = self.p0.distance(self.pH) / self.canvas.mapUnitsPerPixel()
         distPL = self.p0.distance(self.pL) / self.canvas.mapUnitsPerPixel()
         distPR = self.p0.distance(self.pR) / self.canvas.mapUnitsPerPixel()
 
-        if distPA < 6 or distPB < 6 or distPC < 6 or distPD < 6:
+        if distPB < 6:
             self.mode = self.MODE_SCALE
             return
 
@@ -1630,6 +1634,9 @@ class MapTool(QgsMapTool):
                 [self.pPeak, self.pPeak_init],
                 [self.pH, self.pH_init],
                 [self.pL, self.pL_init],
+                [self.pM, self.pM_init],
+                [self.pK, self.pK_init],
+                [self.pZ, self.pZ_init],
             ]:
                 p.setX(p_ini.x() + dx)
                 p.setY(p_ini.y() + dy)
@@ -1729,6 +1736,9 @@ class MapTool(QgsMapTool):
                 [self.pD, self.pD_init],
                 [self.pH, self.pH_init],
                 [self.pL, self.pL_init],
+                [self.pM, self.pM_init],
+                [self.pK, self.pK_init],
+                [self.pZ, self.pZ_init],
             ]:
                 A = QgsGeometry.fromPointXY(i)
                 A.rotate(theta, self.pX)
@@ -1752,6 +1762,9 @@ class MapTool(QgsMapTool):
         self.pH_init = QgsPointXY(self.pH)
         self.pL_init = QgsPointXY(self.pL)
         self.pR_init = QgsPointXY(self.pR)
+        self.pM_init = QgsPointXY(self.pM)
+        self.pK_init = QgsPointXY(self.pK)
+        self.pZ_init = QgsPointXY(self.pZ)
         self.rotation_init = self.rotation
 
         self.mode = self.MODE_NONE
