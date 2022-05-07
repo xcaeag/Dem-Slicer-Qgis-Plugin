@@ -1391,19 +1391,13 @@ class MapTool(QgsMapTool):
             dAlphaDetail = 2 * alpha / (self.finalWidth / self.widget.xStep.value())
             dAlpha = 2 * alpha / 12
 
-            aPrim = self.geomPoint('H')
-            aPrim.rotate(-alpha, self.pointXY('Y'))
-            dPrim = self.geomPoint('D')
-            bPrim = self.geomPoint('H')
-            bPrim.rotate(alpha, self.pointXY('Y'))
-            cPrim = self.geomPoint('C')
             leftEdge = (
-                self.geomPolyline([aPrim.asPoint(), dPrim.asPoint()])
+                self.geomPolyline(['A2', 'D'])
                 .densifyByCount(self.widget.lineCount.value() - 2)
                 .asPolyline()
             )
             rightEdge = (
-                self.geomPolyline([bPrim.asPoint(), cPrim.asPoint()])
+                self.geomPolyline(['B2', 'C'])
                 .asPolyline()
             )
             polyline = []
@@ -1416,6 +1410,8 @@ class MapTool(QgsMapTool):
 
                 polyline.append(line)
 
+            aPrim = self.geomPoint('A2')
+            dPrim = self.geomPoint('D')
             for _ in range(5):
                 seg = self.geomPolyline([aPrim.asPoint(), dPrim.asPoint()]).asPolyline()
                 polylineX.append(seg)
@@ -1557,12 +1553,26 @@ class MapTool(QgsMapTool):
 
         self.points['R'].setXY(self.x('L') + width/2, self.y('C'))
 
-        # TODO
-        self.points['L2'].setXY(
-            (self.x('B') + self.x('C')) / 2, (self.y('B') + self.y('C')) / 2
-        )
-        self.points['B2'].setXY(rubberExtent.xMaximum(), rubberExtent.yMaximum())
+        # perspective handles
+        aH = self.azimuth('Y', 'H')
+        aD = self.azimuth('Y', 'D')
+        if aD > aH:
+            aH = aH + 360
+        alpha = aH - aD
 
+        h = self.geomPoint('H')
+        h.rotate(alpha, self.pointXY('Y'))
+        self.points['B2'].setXY(h.asPoint().x(), h.asPoint().y())
+
+        h = self.geomPoint('H')
+        h.rotate(-alpha, self.pointXY('Y'))
+        self.points['A2'].setXY(h.asPoint().x(), h.asPoint().y())
+
+        h = self.geomPoint('L')
+        h.rotate(alpha, self.pointXY('Y'))
+        self.points['L2'].setXY(h.asPoint().x(), h.asPoint().y())
+
+        # Pos INIT
         self.rotation_init = self.rotation
         self.initpos = {}
         for p in self.ALL_POINTS:
@@ -1713,6 +1723,25 @@ class MapTool(QgsMapTool):
             self.points['L'].setXY(
                 (self.x('B') + self.x('C')) / 2, (self.y('B') + self.y('C')) / 2
             )
+
+        # perspective handles
+        aH = self.azimuth('Y', 'H')
+        aD = self.azimuth('Y', 'D')
+        if aD > aH:
+            aH = aH + 360
+        alpha = aH - aD
+
+        h = self.geomPoint('H')
+        h.rotate(alpha, self.pointXY('Y'))
+        self.points['B2'].setXY(h.asPoint().x(), h.asPoint().y())
+
+        h = self.geomPoint('H')
+        h.rotate(-alpha, self.pointXY('Y'))
+        self.points['A2'].setXY(h.asPoint().x(), h.asPoint().y())
+
+        h = self.geomPoint('L')
+        h.rotate(alpha, self.pointXY('Y'))
+        self.points['L2'].setXY(h.asPoint().x(), h.asPoint().y())
 
         if self.mode == 'peak':
             self.points[self.mode].setXY(pt.x(), pt.y())
