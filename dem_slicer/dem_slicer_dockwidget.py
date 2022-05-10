@@ -19,6 +19,10 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
+
+@todo : contraindre les déplacements de Y, H, M
+@todo : vérifier calcul échantillonage
+@todo : limiter le fonctionnement à une projection métrique
 """
 
 import os
@@ -267,7 +271,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def getProjectionPoint(self, pt):
         # new Y
-        d = (self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(pt))) if self.parallelView.isChecked() else self.mt.pointXY('Y').distance(pt)
+        d = (self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(pt))) \
+            if self.parallelView.isChecked() else self.mt.pointXY('Y').distance(pt)
         z = self.getElevation(self.xMap2Raster.transform(pt.x(), pt.y()))
         newZ = self.getNewZ(z, d)
         zf = self.zFactor.value()
@@ -702,7 +707,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 fid = fid + 1
                                 pt0 = pt
                     except Exception as e:
-                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log("Err ds {} ligne {} ".format(
+                            inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+                        )
                         self.log(e)
                 else:
                     try:
@@ -725,7 +732,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                             fid = fid + 1
                             pt0 = pt
                     except Exception as e:
-                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log("Err ds {} ligne {} ".format(
+                            inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+                        )
                         self.log(e)
 
             # lignes sous horizons
@@ -743,7 +752,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                             feats.append(feature)
                             fid = fid + 1
                     except Exception as e:
-                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log("Err ds {} ligne {} ".format(
+                            inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+                        )
                         self.log(e)
                 else:
                     try:
@@ -760,7 +771,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         feats.append(feature)
                         fid = fid + 1
                     except Exception as e:
-                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log("Err ds {} ligne {} ".format(
+                            inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+                        )
                         self.log(e)
 
             hLayer.dataProvider().addFeatures(feats)
@@ -911,7 +924,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                         feats.append(fet)
                                         fid = fid + 1
                     except Exception as e:
-                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log("Err ds {} ligne {} ".format(
+                            inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+                        )
                         self.log(e)
 
                 if len(feats) > 0:
@@ -974,7 +989,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                         feats.append(fet)
                                         fid = fid + 1
                     except Exception as e:
-                        self.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+                        self.log("Err ds {} ligne {} ".format(
+                            inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+                        )
                         self.log(e)
 
                 if len(feats) > 0:
@@ -1152,34 +1169,35 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.labelElevation.setText("Obs. : {} m   +".format(self.altY))
 
 
-"""
-Outils de manipulation de l'emprise et affichage d'un échantillon
-
-        mode ortho             non ortho
-
-     A------H-------B         _----H----_
-     |              |      A2              B2
-     |  S   X       L       \   S  X      L2
-     |              |        \           /                  ~~~~~~~~~~~~~~~~
-     D------M-------C         \ _--M--_ /        ->          ~~~~~~~~~~~~~~~~
-     \      |      /          D2   |   C2                     R ~~~~~~~~~~~~~~
-       \    d0   /              \  d0 /
-         \  |  /                 \ | /
-            Y                      Y
-
-Les manipulations possibles :
-- déplacement de l'observateur (Y) [DC] reste constant, rotation autour de S (sommet)
-- déplacement de l'horizon AB (H) sur droite YH : M reste en place
-- déplacement 1er profil CD (M) sur droite YH: H reste en place
-- élargissement (L) largeur en mode ortho ou (K) angle
-- rotation centre Y (B) ou (Z)
-
-les poignées visibles : Y (obs), H, M, L, K, B, Z, et R
-
-"""
 class Point():
+    """
+    Outils de manipulation de l'emprise et affichage d'un échantillon
+
+            mode ortho             non ortho
+
+        A------H-------B         _----H----_
+        |              |      A2              B2
+        |  S   X       L       \   S  X      L2
+        |              |        \           /                  ~~~~~~~~~~~~~~~~
+        D------M-------C         \ _--M--_ /        ->         ~~~~~~~~~~~~~~~~
+        \      |      /          D2   |   C2                   R ~~~~~~~~~~~~~~
+          \    d0   /              \  d0 /
+            \  |  /                 \ | /
+               Y                      Y
+
+    Les manipulations possibles :
+    - déplacement de l'observateur (Y) [DC] reste constant, rotation autour de S (sommet)
+    - déplacement de l'horizon AB (H) sur droite YH : M reste en place
+    - déplacement 1er profil CD (M) sur droite YH: H reste en place
+    - élargissement (L) largeur en mode ortho ou (K) angle
+    - rotation centre Y (B) ou (Z)
+
+    les poignées visibles : Y (obs), H, M, L, K, B, Z, et R
+
+    """
+
     def __init__(self, pt=None):
-        self.pxy = pt # QgsPointXY
+        self.pxy = pt  # QgsPointXY
 
     def setXY(self, x, y=None):
         if isinstance(x, QgsPointXY):
@@ -1202,35 +1220,42 @@ class Point():
     def azimuth(self, pt):
         return self.pxy.azimuth(pt.pxy)
 
-# snap a point to a 2d line
-# parameters:
-#   A,B: the endpoints of the line
-#   C: the point we want to snap to the line AB
-# all parameters must be a tuple/list of float numbers
-def snap_to_line(A,B,C):
-    Ax,Ay = A.x(), A.y()
-    Bx,By = B.x(), B.y()
-    Cx,Cy = C.x(), C.y()
+
+def snap_to_line(A, B, C):
+    # snap a point to a 2d line
+    # parameters:
+    #   A,B: the endpoints of the line
+    #   C: the point we want to snap to the line AB
+    # all parameters must be a tuple/list of float numbers
+
+    Ax, Ay = A.x(), A.y()
+    Bx, By = B.x(), B.y()
+    Cx, Cy = C.x(), C.y()
 
     eps = 0.0000001
     if abs(Ax-Bx) < eps and abs(Ay-By) < eps:
-        return QgsPointXY(Ax,Ay)
+        return QgsPointXY(Ax, Ay)
 
     dx = Bx-Ax
     dy = By-Ay
     d2 = dx*dx + dy*dy
     t = ((Cx-Ax)*dx + (Cy-Ay)*dy) / d2
-    if t <= 0: return QgsPointXY(Ax,Ay)
-    if t >= 1: return QgsPointXY(Bx,By)
+    if t <= 0: 
+        return QgsPointXY(Ax, Ay)
+    if t >= 1: 
+        return QgsPointXY(Bx, By)
     return QgsPointXY(dx*t + Ax, dy*t + Ay)
+
 
 class MapTool(QgsMapTool):
     MODE_NONE = 0
     HANDLES = ('Y', 'H', 'M', 'L', 'L2', 'B', 'B2', 'peak', 'R')
     HANDLES_1 = ('Y', 'H', 'M', 'L', 'B', 'peak', 'R')
     HANDLES_2 = ('Y', 'H', 'M', 'B2', 'L2', 'peak', 'R')
-    ALL_POINTS = ('X','A','A2','B','B2','C','C2','D','D2','L','Y','L2','M','R','peak','H')
-    ALL_POINTS_R = ('X','A','A2','B','B2','C','C2','D','D2','L','Y','L2','M','peak','H')
+    ALL_POINTS = ('X', 'A', 'A2', 'B', 'B2', 'C', 'C2', 'D', 'D2',
+                  'L', 'Y', 'L2', 'M', 'R', 'peak', 'H')
+    ALL_POINTS_R = ('X', 'A', 'A2', 'B', 'B2', 'C', 'C2', 'D', 'D2',
+                    'L', 'Y', 'L2', 'M', 'peak', 'H')
 
     def getRubber(self, typ, color=Qt.red, w=6):
         r = QgsRubberBand(self.canvas, typ)
@@ -1239,10 +1264,14 @@ class MapTool(QgsMapTool):
         return r
 
     def geomPolyline(self, pList):
-        return QgsGeometry.fromPolylineXY([(self.points[p].pxy if isinstance(p, str) else p) for p in pList])
+        return QgsGeometry.fromPolylineXY(
+            [(self.points[p].pxy if isinstance(p, str) else p) for p in pList]
+        )
 
     def geomPolygon(self, pList):
-        return QgsGeometry.fromPolygonXY([[(self.points[p].pxy if isinstance(p, str) else p) for p in pList]])
+        return QgsGeometry.fromPolygonXY(
+            [[(self.points[p].pxy if isinstance(p, str) else p) for p in pList]]
+        )
 
     def geomPoint(self, p):
         if isinstance(p, QgsPointXY):
@@ -1321,10 +1350,10 @@ class MapTool(QgsMapTool):
         for p in ('thumbnail', 'box'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.PolygonGeometry)
 
-        for p in  ('foc','lines','horizon'):
+        for p in ('foc', 'lines', 'horizon'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.LineGeometry)
 
-        for p in  ('peak', 'peakProj', 'B', 'H', 'L', 'Y', 'B2', 'L2', 'M', 'R'):
+        for p in ('peak', 'peakProj', 'B', 'H', 'L', 'Y', 'B2', 'L2', 'M', 'R'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry)
 
         # Ordre de la déclaration = ordre d'affichage
@@ -1469,7 +1498,8 @@ class MapTool(QgsMapTool):
             self.rubbers['box'].setToGeometry(
                 QgsGeometry.fromMultiPolygonXY(
                     [[
-                        leftEdge + polyline[0] + rightEdge[::-1] + polyline[-1][::-1] + [leftEdge[0]]
+                        leftEdge + polyline[0] + rightEdge[::-1] + polyline[-1][::-1]
+                        + [leftEdge[0]]
                     ]]
                 )
             )
@@ -1490,7 +1520,9 @@ class MapTool(QgsMapTool):
             self.rubbers['thumbnail'].setToGeometry(thumbnail)
             self.rubbers['horizon'].setToGeometry(horizon)
         except Exception as e:
-            self.widget.log("Err ds {} ligne {} ".format(inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno))
+            self.widget.log("Err ds {} ligne {} ".format(
+                inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+            )
             self.widget.log(e)
 
         # alert
@@ -1609,7 +1641,9 @@ class MapTool(QgsMapTool):
     def move(self, pt, toMove, segOrPoint):
         if isinstance(segOrPoint, list):
             # cible projetée sur segment
-            target = snap_to_line(self.initpos[segOrPoint[0]], self.initpos[segOrPoint[1]], self.initpos[toMove])
+            target = snap_to_line(
+                self.initpos[segOrPoint[0]], self.initpos[segOrPoint[1]], self.initpos[toMove]
+            )
         else:
             # point cible
             target = self.initpos[segOrPoint]
@@ -1652,7 +1686,10 @@ class MapTool(QgsMapTool):
         # result pan
         if self.mode == 'R':
             # déplacer seulement l'échantillon
-            self.points[self.mode].setXY(self.initpos[self.mode].x() + dx, self.initpos[self.mode].y() + dy)
+            self.points[self.mode].setXY(
+                self.initpos[self.mode].x() + dx,
+                self.initpos[self.mode].y() + dy
+            )
 
         # horizontal sizing
         if self.mode == 'L':
@@ -1663,7 +1700,7 @@ class MapTool(QgsMapTool):
             toMove.setXY(self.initpos[self.mode].x()+dx2, self.initpos[self.mode].y() + dy2)
 
             # faire suivre A, B, D, C
-            for p in ['B','C']:
+            for p in ['B', 'C']:
                 toMove = self.points[p]
                 toMove.setXY(self.initpos[p].x()+dx2, self.initpos[p].y()+dy2)
             for p in ['A','D']:
@@ -1695,7 +1732,7 @@ class MapTool(QgsMapTool):
             toMove.setXY(self.initpos[self.mode].x()+dx2, self.initpos[self.mode].y() + dy2)
 
             # faire suivre A, B
-            for p in ['A','B']:
+            for p in ['A', 'B']:
                 toMove = self.points[p]
                 toMove.setXY(self.initpos[p].x()+dx2, self.initpos[p].y()+dy2)
 
@@ -1733,7 +1770,6 @@ class MapTool(QgsMapTool):
 
             self.points[self.mode].setXY(pt.x(), pt.y())
 
-
         if self.mode == 'B' or self.mode == 'B2':
             center = 'Y'
             az_init = self.initpos[self.mode].azimuth(self.pointXY(center))
@@ -1758,9 +1794,15 @@ class MapTool(QgsMapTool):
             a = self.angle('D2', 'Y', 'M')
             dYD = self.distance('Y', 'M') / math.cos(math.radians(a))
             a = self.azimuth('Y', 'A2')
-            self.points['D'].setXY(self.x('Y')+math.sin(math.radians(a))*dYD, self.y('Y')+math.cos(math.radians(a))*dYD)
+            self.points['D'].setXY(
+                self.x('Y')+math.sin(math.radians(a))*dYD,
+                self.y('Y')+math.cos(math.radians(a))*dYD
+            )
             a = self.azimuth('Y', 'B2')
-            self.points['C'].setXY(self.x('Y')+math.sin(math.radians(a))*dYD, self.y('Y')+math.cos(math.radians(a))*dYD)
+            self.points['C'].setXY(
+                self.x('Y')+math.sin(math.radians(a))*dYD,
+                self.y('Y')+math.cos(math.radians(a))*dYD
+            )
 
             self.points['A'].setXY(self.x('H')+self.dx('M', 'D'), self.y('H')+self.dy('M', 'D'))
             self.points['B'].setXY(self.x('H')+self.dx('M', 'C'), self.y('H')+self.dy('M', 'C'))
