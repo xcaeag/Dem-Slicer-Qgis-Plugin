@@ -22,11 +22,11 @@
 
 @todo : contraindre les déplacements de Y, H, M
 @todo : vérifier calcul échantillonage
-@todo : limiter le fonctionnement à une projection métrique
 """
 
 import os
 
+from .__about__ import DIR_PLUGIN_ROOT
 from qgis.PyQt import QtWidgets, uic
 from qgis.PyQt.QtWidgets import QFileDialog
 from qgis.PyQt.QtCore import (
@@ -48,6 +48,7 @@ from qgis.core import (
     QgsMapLayer,
     QgsVectorLayer,
     QgsField,
+    QgsUnitTypes,
 )
 from qgis.core import (
     QgsFeature,
@@ -60,7 +61,7 @@ import math
 import inspect
 
 FORM_CLASS, _ = uic.loadUiType(
-    os.path.join(os.path.dirname(__file__), "dem_slicer_dockwidget_base.ui")
+    os.path.join(DIR_PLUGIN_ROOT, "dem_slicer_dockwidget_base.ui")
 )
 
 
@@ -78,7 +79,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.started = False
         self.btnStart.setCheckable(True)
         self.mt = MapTool(self)
-        self.plugin_dir = os.path.dirname(__file__)
+        self.plugin_dir = DIR_PLUGIN_ROOT
 
         locale = QSettings().value("locale/userLocale")[0:2]
         localePath = os.path.join(self.plugin_dir, "i18n", "{}.qm".format(locale))
@@ -145,12 +146,20 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             "DEM Slicer", self.tr(message), level=Qgis.Info, duration=d
         )
 
+    def warning(self, message, d=1):
+        self.plugin.iface.messageBar().pushMessage(
+            "DEM Slicer", self.tr(message), level=Qgis.Warning, duration=d
+        )
+
     def log(self, message):
         QgsMessageLog.logMessage(str(message), "Extensions")
 
     def start(self):
         """Start the processus : activates tools, builds rubber bands..."""
-        self.info("Start")
+        # check ap units
+        if self.canvas.mapSettings().destinationCrs().mapUnits() == QgsUnitTypes.DistanceDegrees:
+            self.warning(self.tr("Bad map unit (Degrees)"))
+            return
 
         rId = self.rasterList.itemData(self.rasterList.currentIndex())
         poiId = self.poiList.itemData(self.poiList.currentIndex())
@@ -1633,7 +1642,7 @@ class MapTool(QgsMapTool):
             self.widget.log("mode "+p)
             return
 
-        if self.rubbers['thumbnail'].asGeometry().contains(self.p0):
+        if self.rubbers['thumbnail'].asGeometry().convexHull().contains(self.p0):
             self.mode = 'R'
             self.widget.log("mode "+p)
             return
