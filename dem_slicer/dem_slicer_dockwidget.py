@@ -20,7 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-@todo : contraindre les déplacements de Y, H, M
 @todo : vérifier calcul échantillonage
 """
 
@@ -315,7 +314,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             polylineIn = geom.densifyByDistance(dx).asMultiPolyline()
         else:
             aH = self.mt.azimuth('Y', 'H')
-            aD = self.mt.azimuth('Y', 'D')
+            aD = self.mt.azimuth('Y', 'D2')
             if aD > aH:
                 aH = aH + 360
 
@@ -323,15 +322,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             dAlphaDetail = 2.0 * alpha / (self.mt.finalWidth / self.xStep.value())
             dAlpha = 2.0 * alpha / (self.mt.finalWidth / dx)
 
-            aPrim = self.mt.geomPoint('H')
-            aPrim.rotate(-alpha, self.mt.pointXY('Y'))
-            aPrim = aPrim.asPoint()
-            dPrim = self.mt.geomPoint('M')
-            dPrim.rotate(-alpha, self.mt.pointXY('Y'))
-            dPrim = dPrim.asPoint()
-
             leftEdge = (
-                QgsGeometry.fromPolylineXY([aPrim, dPrim])
+                self.mt.geomPolyline('A2', 'D2')
                 .densifyByCount(lineCount - 2)
                 .asPolyline()
             )
@@ -1753,6 +1745,13 @@ class MapTool(QgsMapTool):
             _, dx2, dy2 = self.move(pt, 'M', ['A', 'B'])
             toMove.setXY(self.initpos[self.mode].x()+dx2, self.initpos[self.mode].y() + dy2)
 
+            # empecher de passer sur seg [MH]
+            dMY = self.distance('M', 'Y')
+            dHY = self.distance('H', 'Y')
+            if dMY >= dHY:
+                self.points[self.mode].setXY(self.initpos[self.mode])
+                return
+
             if self.distance('H', 'M') > self.distance('H', 'Y'):
                 self.points['M'].setXY(self.initpos['M'])
                 return
@@ -1765,19 +1764,24 @@ class MapTool(QgsMapTool):
 
         if self.mode == 'Y':
             center = 'M'
-            # TODO empecher de passer sur seg [MH]
+            self.points[self.mode].setXY(pt.x(), pt.y())
+
+            # empecher de passer sur seg [MH]
+            dYM = self.distance('Y', 'M')
+            if dYM < self.canvas.mapUnitsPerPixel():
+                self.points[self.mode].setXY(self.initpos[self.mode])
+                return
+
             az_init = self.initpos[self.mode].azimuth(self.pointXY(center))
             az_new = pt.azimuth(self.pointXY(center))
             if az_init > az_new:
                 az_new = az_new + 360
             theta = az_new - az_init
 
-            for p in list(set(self.ALL_POINTS_R)-set(['M'])):
+            for p in list(set(self.ALL_POINTS_R)-set(['M', 'Y'])):
                 A = self.geomPoint(self.initpos[p])
                 A.rotate(theta, self.pointXY(center))
                 self.points[p].setXY(A.asPoint().x(), A.asPoint().y())
-
-            self.points[self.mode].setXY(pt.x(), pt.y())
 
         if self.mode == 'B' or self.mode == 'B2':
             center = 'Y'
