@@ -25,50 +25,12 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 
 # Initialize Qt resources from file resources.py
+from .__about__ import DIR_PLUGIN_ROOT
 from .resources import *
 
 # Import the code for the DockWidget
 from .dem_slicer_dockwidget import DemSlicerDockWidget
 import os.path
-
-import sys
-import traceback
-from qgis.core import QgsMessageLog, Qgis
-
-MESSAGE_CATEGORY = "Messages"
-
-
-def enable_remote_debugging():
-    try:
-        import ptvsd
-
-        if ptvsd.is_attached():
-            QgsMessageLog.logMessage(
-                "Remote Debug for Visual Studio is already active",
-                MESSAGE_CATEGORY,
-                Qgis.Info,
-            )
-            return
-        ptvsd.enable_attach(address=("localhost", 5678))
-        QgsMessageLog.logMessage(
-            "dem_slicer attached remote Debug for Visual Studio on port 5678",
-            MESSAGE_CATEGORY,
-            Qgis.Info,
-        )
-    except:
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        format_exception = traceback.format_exception(
-            exc_type, exc_value, exc_traceback
-        )
-        QgsMessageLog.logMessage(
-            repr(format_exception[0]), MESSAGE_CATEGORY, Qgis.Critical
-        )
-        QgsMessageLog.logMessage(
-            repr(format_exception[1]), MESSAGE_CATEGORY, Qgis.Critical
-        )
-        QgsMessageLog.logMessage(
-            repr(format_exception[2]), MESSAGE_CATEGORY, Qgis.Critical
-        )
 
 
 class DemSlicer:
@@ -82,13 +44,12 @@ class DemSlicer:
             application at run time.
         :type iface: QgsInterface
         """
-        # enable_remote_debugging()
 
         # Save reference to the QGIS interface
         self.iface = iface
 
         # initialize plugin directory
-        self.plugin_dir = os.path.dirname(__file__)
+        self.plugin_dir = DIR_PLUGIN_ROOT
 
         # initialize locale
         locale = QSettings().value("locale/userLocale")[0:2]
@@ -196,9 +157,8 @@ class DemSlicer:
         return action
 
     def initGui(self):
-        """Create the menu entries and toolbar icons inside the QGIS GUI."""
-
-        icon_path = ":/plugins/dem_slicer/resources/icon.png"
+        """Create the menu entries and toolbar icons inside the QGIS GUI."""    
+        icon_path = str(DIR_PLUGIN_ROOT / "resources/icon.png")
         self.add_action(
             icon_path,
             text=self.tr(u"D.E.M. slicer"),
@@ -210,16 +170,8 @@ class DemSlicer:
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
 
-        # print "** CLOSING DemSlicer"
-
         # disconnects
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
-
-        # remove this statement if dockwidget is to remain
-        # for reuse if plugin is reopened
-        # Commented next statement since it causes QGIS crashe
-        # when closing the docked window:
-        # self.dockwidget = None
 
         self.pluginIsActive = False
 
