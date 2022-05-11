@@ -60,7 +60,7 @@ import math
 import inspect
 
 FORM_CLASS, _ = uic.loadUiType(
-    str(DIR_PLUGIN_ROOT / "dem_slicer_dockwidget_base.ui")
+    str(DIR_PLUGIN_ROOT / "ui/dem_slicer_dockwidget_base.ui")
 )
 
 
@@ -188,7 +188,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         for w in self.widget2Enable:
             w.setEnabled(True)
-        # self.elevation.setEnabled(not self.parallelView.isChecked())
+        self.renderCompass.setEnabled(not self.parallelView.isChecked())
 
         self.canvas.setMapTool(self.mt)
 
@@ -575,7 +575,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             aPolys.append(QgsGeometry.fromPolygonXY([lineOut]))
 
         # Compass ------------------------------------------------------------------------
-        if not self.parallelView.isChecked():
+        if not self.parallelView.isChecked() and self.renderCompass.isChecked():
             compass = QgsVectorLayer(
                 "Point?crs={}".format(QgsProject.instance().crs().authid()),
                 "Compass",
@@ -1057,7 +1057,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.mt.updateRubberGeom()
 
     def on_parallelView_stateChanged(self, v):
-        # self.elevation.setEnabled(not self.parallelView.isChecked())
+        self.renderCompass.setEnabled(not self.parallelView.isChecked())
         self.mt.updateRubberGeom()
 
     def on_btnBuild_released(self):
@@ -1106,6 +1106,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             s.setValue("dem_slicer/renderLines", self.renderLines.isChecked())
             s.setValue("dem_slicer/renderPolygons", self.renderPolygons.isChecked())
             s.setValue("dem_slicer/renderRidges", self.renderRidges.isChecked())
+            s.setValue("dem_slicer/renderCompass", self.renderCompass.isChecked())
 
             s.sync()
 
@@ -1152,6 +1153,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             )
             self.renderRidges.setChecked(
                 True if s.value("dem_slicer/renderRidges") else False
+            )
+            self.renderCompass.setChecked(
+                True if s.value("dem_slicer/renderCompass") else False
             )
 
             for p in self.mt.ALL_POINTS:
