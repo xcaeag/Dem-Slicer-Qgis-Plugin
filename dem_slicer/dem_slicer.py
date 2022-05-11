@@ -49,12 +49,11 @@ class DemSlicer:
         self.iface = iface
 
         # initialize plugin directory
-        self.plugin_dir = DIR_PLUGIN_ROOT
 
         # initialize locale
         locale = QSettings().value("locale/userLocale")[0:2]
         locale_path = os.path.join(
-            self.plugin_dir, "i18n", "DemSlicer_{}.qm".format(locale)
+            str(DIR_PLUGIN_ROOT / "i18n"), "DemSlicer_{}.qm".format(locale)
         )
 
         if os.path.exists(locale_path):

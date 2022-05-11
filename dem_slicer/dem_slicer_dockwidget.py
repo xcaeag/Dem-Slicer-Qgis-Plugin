@@ -60,7 +60,7 @@ import math
 import inspect
 
 FORM_CLASS, _ = uic.loadUiType(
-    os.path.join(DIR_PLUGIN_ROOT, "dem_slicer_dockwidget_base.ui")
+    str(DIR_PLUGIN_ROOT / "dem_slicer_dockwidget_base.ui")
 )
 
 
@@ -78,10 +78,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.started = False
         self.btnStart.setCheckable(True)
         self.mt = MapTool(self)
-        self.plugin_dir = DIR_PLUGIN_ROOT
 
         locale = QSettings().value("locale/userLocale")[0:2]
-        localePath = os.path.join(self.plugin_dir, "i18n", "{}.qm".format(locale))
+        localePath = os.path.join(str(DIR_PLUGIN_ROOT / "i18n"), "{}.qm".format(locale))
         self.info(localePath)
 
         if os.path.exists(localePath):
@@ -158,7 +157,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # check ap units
         if self.canvas.mapSettings().destinationCrs().mapUnits() == QgsUnitTypes.DistanceDegrees:
             self.warning(self.tr("Bad map unit (Degrees)"))
-            return
+            self.alert.setText(self.tr("Bad map unit (Degrees)"))
+        else:
+            self.alert.setText("")
 
         rId = self.rasterList.itemData(self.rasterList.currentIndex())
         poiId = self.poiList.itemData(self.poiList.currentIndex())
@@ -323,7 +324,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             dAlpha = 2.0 * alpha / (self.mt.finalWidth / dx)
 
             leftEdge = (
-                self.mt.geomPolyline('A2', 'D2')
+                self.mt.geomPolyline(['A2', 'D2'])
                 .densifyByCount(lineCount - 2)
                 .asPolyline()
             )
@@ -605,7 +606,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             compass.commitChanges()
 
             QgsProject.instance().addMapLayer(compass)
-            compass.loadNamedStyle(self.plugin_dir + "/compass.qml")
+            compass.loadNamedStyle(str(DIR_PLUGIN_ROOT / "compass.qml"))
 
         # Line Slices --------------------------------------------------------------------
         if self.renderLines.isChecked():
@@ -615,7 +616,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 "memory",
             )
             self.buildLayer(layer, aLines, progress)
-            layer.loadNamedStyle(self.plugin_dir + "/lines.qml")
+            layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "lines.qml"))
 
         # Poly Slices --------------------------------------------------------------------
         if self.renderPolygons.isChecked():
@@ -626,9 +627,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             )
             self.buildLayer(pLayer, aPolys, progress)
             if self.renderRidges.isChecked():
-                pLayer.loadNamedStyle(self.plugin_dir + "/polygons_ridges.qml")
+                pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "polygons_ridges.qml"))
             else:
-                pLayer.loadNamedStyle(self.plugin_dir + "/polygons.qml")
+                pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "polygons.qml"))
 
         # RIDGES --------------------------------------------------------------------
         if self.renderRidges.isChecked():
@@ -637,7 +638,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 "Ridges",
                 "memory",
             )
-            hLayer.loadNamedStyle(self.plugin_dir + "/ridges.qml")
+            hLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "ridges.qml"))
             QgsProject.instance().addMapLayer(hLayer)
             hLayer.startEditing()
 
@@ -885,7 +886,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     layer.updateFields()
 
                     layer.dataProvider().addFeatures(feats)
-                    layer.loadNamedStyle(self.plugin_dir + "/poi.qml")
+                    layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "poi.qml"))
                     layer.commitChanges()
 
             # Projeter des lignes ou polygones
@@ -1243,7 +1244,7 @@ def snap_to_line(A, B, C):
     t = ((Cx-Ax)*dx + (Cy-Ay)*dy) / d2
     if t <= 0: 
         return QgsPointXY(Ax, Ay)
-    if t >= 1: 
+    if t >= 1:
         return QgsPointXY(Bx, By)
     return QgsPointXY(dx*t + Ax, dy*t + Ay)
 
@@ -1357,6 +1358,11 @@ class MapTool(QgsMapTool):
         for p in ('peak', 'peakProj', 'B', 'H', 'L', 'Y', 'B2', 'L2', 'M', 'R'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry)
 
+        """for p in ('A', 'B', 'C', 'D'):
+            self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry, color=Qt.green, w=2)
+        for p in ('A2', 'C2', 'D2'):
+            self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry, color=Qt.darkGray, w=2)"""
+
         # Ordre de la déclaration = ordre d'affichage
 
         # thumbnails skylines - profil échantillon projeté
@@ -1441,7 +1447,6 @@ class MapTool(QgsMapTool):
             self.rubbers['foc'].setToGeometry(self.geomPolyline(['D2', 'Y', 'C2']))
 
             alpha = self.angle('D', 'Y', 'H')
-            dAlphaDetail = 2 * alpha / (self.zoneWidth / self.widget.xStep.value())
             dAlpha = 2 * alpha / 12
 
             leftEdge = (
@@ -1463,15 +1468,16 @@ class MapTool(QgsMapTool):
 
                 polyline.append(line)
 
+            self.finalWidth = self.geomPolyline(polyline[int(len(polyline) / 2)]).length()
+
             aPrim = self.geomPoint('A2')
             dPrim = self.geomPoint('D2')
+            dAlphaDetail = 2 * alpha / (self.finalWidth / self.widget.xStep.value())
             for _ in range(5):
                 seg = self.geomPolyline([aPrim.asPoint(), dPrim.asPoint()]).asPolyline()
                 polylineX.append(seg)
                 aPrim.rotate(dAlphaDetail, self.pointXY('Y'))
                 dPrim.rotate(dAlphaDetail, self.pointXY('Y'))
-
-            self.finalWidth = self.geomPolyline(polyline[int(len(polyline) / 2)]).length()
 
         self.cuttingLines = polyline
         self.rubbers['lines'].setToGeometry(
@@ -1484,17 +1490,16 @@ class MapTool(QgsMapTool):
 
         # final result
 
-        # peak
-        proj = self.widget.getPeakGeom(self.pointXY('peak'))
-        self.rubbers['peakProj'].setToGeometry(proj)
-
         # box
         if self.widget.parallelView.isChecked():
             self.rubbers['box'].setToGeometry(
                 self.geomPolygon(['D', 'A', 'B', 'C', 'D'])
             )
             for p in self.HANDLES_1:
-                self.rubbers[p].setToGeometry(self.geomPoint(p))
+                try:
+                    self.rubbers[p].setToGeometry(self.geomPoint(p))
+                except Exception:
+                    pass
         else:
             self.rubbers['box'].setToGeometry(
                 QgsGeometry.fromMultiPolygonXY(
@@ -1505,7 +1510,15 @@ class MapTool(QgsMapTool):
                 )
             )
             for p in self.HANDLES_2:
-                self.rubbers[p].setToGeometry(self.geomPoint(p))
+                try:
+                    self.rubbers[p].setToGeometry(self.geomPoint(p))
+                except Exception:
+                    pass
+
+        # peak
+        if self.rubbers['box'].asGeometry().contains(self.pointXY('peak')):
+            proj = self.widget.getPeakGeom(self.pointXY('peak'))
+            self.rubbers['peakProj'].setToGeometry(proj)
 
         polyline = []
         nbLines = self.widget.lineCount.value()
@@ -1587,14 +1600,13 @@ class MapTool(QgsMapTool):
         # handles H / L
         self.points['H'].setXY(self.milieu('A', 'B'))
         self.points['L'].setXY(self.milieu('B', 'C'))
+        self.points['M'].setXY(self.milieu('C', 'D'))
 
         # eye (rotation)
         self.points['Y'].setXY(self.x('X'), self.y('X') - height)
 
         # peak
         self.points['peak'].setXY(self.milieu('A', 'C'))
-
-        self.points['M'].setXY(self.milieu('C', 'D'))
 
         self.points['R'].setXY(self.x('L') + width/2, self.y('C'))
 
@@ -1668,6 +1680,37 @@ class MapTool(QgsMapTool):
             az_new = az_new + 360
         return az_new - az_init
 
+    def updateCD(self):
+        # faire suivre D C A B
+        a = self.angle('D2', 'Y', 'M')
+        dYD = self.distance('Y', 'M') / math.cos(math.radians(a))
+
+        a = self.azimuth('Y', 'A2')
+        self.points['D'].setXY(
+            self.x('Y')+math.sin(math.radians(a))*dYD,
+            self.y('Y')+math.cos(math.radians(a))*dYD
+        )
+        a = self.azimuth('Y', 'B2')
+        self.points['C'].setXY(
+            self.x('Y')+math.sin(math.radians(a))*dYD,
+            self.y('Y')+math.cos(math.radians(a))*dYD
+        )
+
+    def updateABCD(self):
+        self.updateCD()
+        self.points['A'].setXY(self.x('H')+self.dx('M', 'D'), self.y('H')+self.dy('M', 'D'))
+        self.points['B'].setXY(self.x('H')+self.dx('M', 'C'), self.y('H')+self.dy('M', 'C'))
+        self.points['X'].setXY(self.milieu('A', 'C'))
+        self.points['L'].setXY(self.milieu('B', 'C'))
+
+    def updateA2B2C2D2(self):
+        a = self.angle('D', 'Y', 'H')
+        self.points['A2'].setXY(self.rotatePoint('H', -a, 'Y'))
+        self.points['B2'].setXY(self.rotatePoint('H', a, 'Y'))
+        self.points['C2'].setXY(self.rotatePoint('M', a, 'Y'))
+        self.points['D2'].setXY(self.rotatePoint('M', -a, 'Y'))
+        self.points['L2'].setXY(self.rotatePoint('X', a, 'Y'))
+
     def canvasMoveEvent(self, event):
         if self.mode == self.MODE_NONE:
             return
@@ -1677,6 +1720,12 @@ class MapTool(QgsMapTool):
         pt = self.canvas.getCoordinateTransform().toMapCoordinates(x, y)
         dx = pt.x() - self.p0.x()
         dy = pt.y() - self.p0.y()
+
+        try:
+            toMove = self.points[self.mode]
+            xi, yi = toMove.x(), toMove.y()
+        except Exception:
+            xi, yi = self.p0.x(), self.p0.y()
 
         # pan mode
         if self.mode == 'box':
@@ -1694,19 +1743,26 @@ class MapTool(QgsMapTool):
 
         # horizontal sizing
         if self.mode == 'L':
-            toMove = self.points[self.mode]
             # On déplace L
             # distance L <-> [A,D]
             _, dx2, dy2 = self.move(pt, 'L', ['A', 'D'])
             toMove.setXY(self.initpos[self.mode].x()+dx2, self.initpos[self.mode].y() + dy2)
 
+            # contrainte
+            if self.distance('A', 'B') < 2 * self.widget.xStep.value():
+                self.points[self.mode].setXY(xi, yi)
+                return
+
             # faire suivre A, B, D, C
             for p in ['B', 'C']:
                 toMove = self.points[p]
                 toMove.setXY(self.initpos[p].x()+dx2, self.initpos[p].y()+dy2)
-            for p in ['A','D']:
+            for p in ['A', 'D']:
                 toMove = self.points[p]
                 toMove.setXY(self.initpos[p].x()-dx2, self.initpos[p].y()-dy2)
+
+            # A2 B2 C2 Y2
+            self.updateA2B2C2D2()
 
         if self.mode == 'L2':
             center = 'Y'
@@ -1714,19 +1770,26 @@ class MapTool(QgsMapTool):
 
             # déplacer la poignée (rotation)
             self.points['L2'].setXY(self.rotatePoint(self.initpos['L2'], delta, 'Y'))
+
+            # contrainte
+            if self.distance('A2', 'B2') < self.distance(self.initpos['A2'], self.initpos['B2']) and self.distance('L2', 'X') < 2 * self.widget.xStep.value():
+                self.points[self.mode].setXY(xi, yi)
+                return
+
             a = self.angle('M', 'Y', 'L2')
-            if not (a > 0 and a < 90):
-                self.points['L2'].setXY(self.initpos['L2'])
+            # self.widget.log("a {} ".format(a))
+            if (a >= 89):
+                self.points[self.mode].setXY(xi, yi)
                 return
 
             self.points['C2'].setXY(self.rotatePoint(self.initpos['C2'], delta, 'Y'))
             self.points['B2'].setXY(self.rotatePoint(self.initpos['B2'], delta, 'Y'))
             self.points['D2'].setXY(self.rotatePoint(self.initpos['D2'], -delta, 'Y'))
             self.points['A2'].setXY(self.rotatePoint(self.initpos['A2'], -delta, 'Y'))
+            self.updateABCD()
 
         # horizon deplacement
         if self.mode == 'H':
-            toMove = self.points[self.mode]
             # On déplace H
             # distance H <-> [C,D]
             _, dx2, dy2 = self.move(pt, 'H', ['C', 'D'])
@@ -1737,51 +1800,46 @@ class MapTool(QgsMapTool):
                 toMove = self.points[p]
                 toMove.setXY(self.initpos[p].x()+dx2, self.initpos[p].y()+dy2)
 
+            self.updateCD()
+            self.updateA2B2C2D2()
+
         # first line deplacement
         if self.mode == 'M':
-            toMove = self.points[self.mode]
             # On déplace M le long de (Y,H)
             # distance M <-> [A,B]
             _, dx2, dy2 = self.move(pt, 'M', ['A', 'B'])
             toMove.setXY(self.initpos[self.mode].x()+dx2, self.initpos[self.mode].y() + dy2)
 
             # empecher de passer sur seg [MH]
-            dMY = self.distance('M', 'Y')
-            dHY = self.distance('H', 'Y')
-            if dMY >= dHY:
-                self.points[self.mode].setXY(self.initpos[self.mode])
-                return
-
             if self.distance('H', 'M') > self.distance('H', 'Y'):
-                self.points['M'].setXY(self.initpos['M'])
+                self.points[self.mode].setXY(xi, yi)
                 return
 
-            if self.widget.parallelView.isChecked():
-                # faire suivre C, D
-                for p in ['C','D']:
-                    toMove = self.points[p]
-                    toMove.setXY(self.initpos[p].x()+dx2, self.initpos[p].y()+dy2)
+            self.updateABCD()
+            self.updateA2B2C2D2()
 
-        if self.mode == 'Y':
+        if self.mode == 'Y':  # CD fixe en largeur
             center = 'M'
             self.points[self.mode].setXY(pt.x(), pt.y())
 
             # empecher de passer sur seg [MH]
             dYM = self.distance('Y', 'M')
             if dYM < self.canvas.mapUnitsPerPixel():
-                self.points[self.mode].setXY(self.initpos[self.mode])
+                self.points[self.mode].setXY(xi, yi)
                 return
 
+            # rotation H, C, D
             az_init = self.initpos[self.mode].azimuth(self.pointXY(center))
             az_new = pt.azimuth(self.pointXY(center))
             if az_init > az_new:
                 az_new = az_new + 360
             theta = az_new - az_init
 
-            for p in list(set(self.ALL_POINTS_R)-set(['M', 'Y'])):
-                A = self.geomPoint(self.initpos[p])
-                A.rotate(theta, self.pointXY(center))
-                self.points[p].setXY(A.asPoint().x(), A.asPoint().y())
+            for p in ['H', 'C', 'D']:
+                self.points[p].setXY(self.rotatePoint(self.initpos[p], theta, center))
+
+            self.updateA2B2C2D2()
+            self.updateABCD()
 
         if self.mode == 'B' or self.mode == 'B2':
             center = 'Y'
@@ -1801,32 +1859,6 @@ class MapTool(QgsMapTool):
 
         self.points['X'].setXY(self.milieu('A', 'C'))
         self.points['L'].setXY(self.milieu('B', 'C'))
-
-        if not self.widget.parallelView.isChecked():
-            # faire suivre D C A B
-            a = self.angle('D2', 'Y', 'M')
-            dYD = self.distance('Y', 'M') / math.cos(math.radians(a))
-            a = self.azimuth('Y', 'A2')
-            self.points['D'].setXY(
-                self.x('Y')+math.sin(math.radians(a))*dYD,
-                self.y('Y')+math.cos(math.radians(a))*dYD
-            )
-            a = self.azimuth('Y', 'B2')
-            self.points['C'].setXY(
-                self.x('Y')+math.sin(math.radians(a))*dYD,
-                self.y('Y')+math.cos(math.radians(a))*dYD
-            )
-
-            self.points['A'].setXY(self.x('H')+self.dx('M', 'D'), self.y('H')+self.dy('M', 'D'))
-            self.points['B'].setXY(self.x('H')+self.dx('M', 'C'), self.y('H')+self.dy('M', 'C'))
-
-        # perspective handles
-        a = self.angle('D', 'Y', 'H')
-        self.points['B2'].setXY(self.rotatePoint('H', a, 'Y'))
-        self.points['L2'].setXY(self.rotatePoint('X', a, 'Y'))
-        self.points['A2'].setXY(self.rotatePoint('H', -a, 'Y'))
-        self.points['C2'].setXY(self.rotatePoint('M', a, 'Y'))
-        self.points['D2'].setXY(self.rotatePoint('M', -a, 'Y'))
 
         self.updateRubberGeom()
 
