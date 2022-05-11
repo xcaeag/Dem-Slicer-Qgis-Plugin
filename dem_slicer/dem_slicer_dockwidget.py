@@ -19,8 +19,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-
-@todo : vérifier calcul échantillonage
 """
 
 import os
@@ -464,7 +462,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         def projPolygon(feat, polygon):
             # reprojet points
             prof = 0
-            self.log("in projPolyline, altY = {}".format(self.altY))
+            # self.log("in projPolyline, altY = {}".format(self.altY))
             for polyline in polygon:
                 self.projPolyline(polyline)
                 if self.parallelView.isChecked():
@@ -583,7 +581,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             )
             aLeft = self.mt.azimuth('Y', 'D')
             aRight = self.mt.azimuth('Y', 'C')
-            self.log("{} {}".format(aLeft, aRight))
+            # self.log("{} {}".format(aLeft, aRight))
             if aLeft > aRight:
                 aRight = aRight + 360
 
@@ -1246,7 +1244,7 @@ def snap_to_line(A, B, C):
     dy = By-Ay
     d2 = dx*dx + dy*dy
     t = ((Cx-Ax)*dx + (Cy-Ay)*dy) / d2
-    if t <= 0: 
+    if t <= 0:
         return QgsPointXY(Ax, Ay)
     if t >= 1:
         return QgsPointXY(Bx, By)
@@ -1572,12 +1570,12 @@ class MapTool(QgsMapTool):
         )
 
     def newRubber(self):
-        self.widget.log('newRubber')
+        # self.widget.log('newRubber')
         if self.points['X'].isOk():
             self.updateRubberGeom()
             return
 
-        self.widget.log('  ...')
+        # self.widget.log('  ...')
 
         # default parameters
         h = 2 * self.widget.canvas.extent().height() / 3 / 20
@@ -1642,17 +1640,17 @@ class MapTool(QgsMapTool):
         for p in self.HANDLES_1 if self.widget.parallelView.isChecked() else self.HANDLES_2:
             if self.p0.distance(self.pointXY(p)) / self.canvas.mapUnitsPerPixel() < DIST:
                 self.mode = p
-                self.widget.log("mode "+p)
+                # self.widget.log("mode "+p)
                 return
 
         if self.rubbers['box'].asGeometry().contains(self.p0):
             self.mode = 'box'
-            self.widget.log("mode "+p)
+            # self.widget.log("mode "+p)
             return
 
         if self.rubbers['thumbnail'].asGeometry().convexHull().contains(self.p0):
             self.mode = 'R'
-            self.widget.log("mode "+p)
+            # self.widget.log("mode "+p)
             return
 
     def move(self, pt, toMove, segOrPoint):
@@ -1826,7 +1824,7 @@ class MapTool(QgsMapTool):
             center = 'M'
             self.points[self.mode].setXY(pt.x(), pt.y())
 
-            # empecher de passer sur seg [MH]
+            # contrainte
             dYM = self.distance('Y', 'M')
             if dYM < self.canvas.mapUnitsPerPixel():
                 self.points[self.mode].setXY(xi, yi)
