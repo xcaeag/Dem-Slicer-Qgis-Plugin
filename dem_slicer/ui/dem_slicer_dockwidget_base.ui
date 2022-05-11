@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>307</width>
-    <height>444</height>
+    <height>467</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,6 +52,16 @@
           </property>
           <property name="text">
            <string>render ridges</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="renderCompass">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>render compass</string>
           </property>
          </widget>
         </item>
@@ -426,9 +436,10 @@
   <tabstop>renderLines</tabstop>
   <tabstop>renderPolygons</tabstop>
   <tabstop>renderRidges</tabstop>
-  <tabstop>btnBuild</tabstop>
+  <tabstop>renderCompass</tabstop>
   <tabstop>btnSave</tabstop>
   <tabstop>btnLoad</tabstop>
+  <tabstop>btnBuild</tabstop>
  </tabstops>
  <resources/>
  <connections/>

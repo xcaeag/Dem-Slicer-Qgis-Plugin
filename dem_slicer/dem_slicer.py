@@ -156,7 +156,7 @@ class DemSlicer:
         return action
 
     def initGui(self):
-        """Create the menu entries and toolbar icons inside the QGIS GUI."""    
+        """Create the menu entries and toolbar icons inside the QGIS GUI."""
         icon_path = str(DIR_PLUGIN_ROOT / "resources/icon.png")
         self.add_action(
             icon_path,
