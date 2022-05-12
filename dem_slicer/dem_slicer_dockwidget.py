@@ -1190,13 +1190,13 @@ class Point():
                Y                      Y
 
     Les manipulations possibles :
-    - déplacement de l'observateur (Y) [DC] reste constant, rotation autour de S (sommet)
+    - déplacement de l'observateur (Y) [DC] reste constant, rotation autour de M (sommet)
     - déplacement de l'horizon AB (H) sur droite YH : M reste en place
     - déplacement 1er profil CD (M) sur droite YH: H reste en place
-    - élargissement (L) largeur en mode ortho ou (K) angle
-    - rotation centre Y (B) ou (Z)
+    - élargissement (L) largeur en mode ortho ou (L2) angle
+    - rotation centre Y (B) ou (B2)
 
-    les poignées visibles : Y (obs), H, M, L, K, B, Z, et R
+    les poignées visibles : Y (obs), H, M, L, L2, B, B2, et R
 
     """
 
@@ -1360,7 +1360,8 @@ class MapTool(QgsMapTool):
         for p in ('peak', 'peakProj', 'B', 'H', 'L', 'Y', 'B2', 'L2', 'M', 'R'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry)
 
-        """for p in ('A', 'B', 'C', 'D'):
+        """ tests
+        for p in ('A', 'B', 'C', 'D'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry, color=Qt.green, w=2)
         for p in ('A2', 'C2', 'D2'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry, color=Qt.darkGray, w=2)"""
