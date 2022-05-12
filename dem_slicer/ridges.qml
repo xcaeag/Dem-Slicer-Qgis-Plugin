@@ -1,8 +1,8 @@
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
-<qgis version="3.22.5-Białowieża" styleCategories="Symbology">
-  <renderer-v2 forceraster="0" enableorderby="0" type="singleSymbol" symbollevels="0" referencescale="-1">
+<qgis styleCategories="Symbology|Labeling" version="3.24.2-Tisler" labelsEnabled="0">
+  <renderer-v2 enableorderby="0" forceraster="0" symbollevels="0" referencescale="-1" type="singleSymbol">
     <symbols>
-      <symbol clip_to_extent="1" name="0" force_rhr="0" alpha="1" type="line">
+      <symbol clip_to_extent="1" alpha="1" name="0" type="line" force_rhr="0">
         <data_defined_properties>
           <Option type="Map">
             <Option value="" name="name" type="QString"/>
@@ -10,7 +10,7 @@
             <Option value="collection" name="type" type="QString"/>
           </Option>
         </data_defined_properties>
-        <layer locked="0" enabled="1" class="SimpleLine" pass="0">
+        <layer class="SimpleLine" locked="0" pass="0" enabled="1">
           <Option type="Map">
             <Option value="0" name="align_dash_pattern" type="QString"/>
             <Option value="flat" name="capstyle" type="QString"/>
@@ -72,13 +72,13 @@
               <Option value="" name="name" type="QString"/>
               <Option name="properties" type="Map">
                 <Option name="enabled" type="Map">
-                  <Option value="true" name="active" type="bool"/>
+                  <Option value="false" name="active" type="bool"/>
                   <Option value="&quot;demslicer_gaz&quot; > 1" name="expression" type="QString"/>
                   <Option value="3" name="type" type="int"/>
                 </Option>
                 <Option name="outlineWidth" type="Map">
                   <Option value="true" name="active" type="bool"/>
-                  <Option value="scale_linear(  coalesce( &quot;demslicer_gaz&quot;, maximum(&quot;demslicer_gaz&quot;)/3) , 0, maximum(&quot;demslicer_gaz&quot;), 0.05, 0.8)" name="expression" type="QString"/>
+                  <Option value="scale_linear(  coalesce( &quot;demslicer_gaz&quot;, maximum(&quot;demslicer_gaz&quot;)/2) , 1, maximum(&quot;demslicer_gaz&quot;), 0.01, 1)" name="expression" type="QString"/>
                   <Option value="3" name="type" type="int"/>
                 </Option>
               </Option>

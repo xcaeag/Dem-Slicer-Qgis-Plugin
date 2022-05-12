@@ -234,7 +234,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             if i > prof and p.contains(pt):
                 return i - prof
 
-        return 99
+        return None
 
     def getVisibility(self, pt, polys, prof):
         """
