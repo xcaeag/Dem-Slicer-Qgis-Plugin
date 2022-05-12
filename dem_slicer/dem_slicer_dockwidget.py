@@ -24,6 +24,8 @@
 import os
 
 from .__about__ import DIR_PLUGIN_ROOT
+from .logic import tools
+
 from qgis.PyQt import QtWidgets, uic
 from qgis.PyQt.QtWidgets import QFileDialog
 from qgis.PyQt.QtCore import (
@@ -232,7 +234,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             if i > prof and p.contains(pt):
                 return i - prof
 
-        return None
+        return 99
 
     def getVisibility(self, pt, polys, prof):
         """
@@ -634,20 +636,13 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 "memory",
             )
             # hLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "ridges.qml"))
-            QgsProject.instance().addMapLayer(hLayer)
             hLayer.startEditing()
 
             hLayer.dataProvider().addAttributes(
-                [QgsField("demslicer_num", QVariant.Int)]
+                [QgsField("demslicer_prof", QVariant.Int)]
             )
             hLayer.dataProvider().addAttributes(
                 [QgsField("demslicer_gaz", QVariant.Int)]
-            )
-            hLayer.dataProvider().addAttributes(
-                [QgsField("demslicer_visi", QVariant.Int)]
-            )
-            hLayer.dataProvider().addAttributes(
-                [QgsField("demslicer_prof", QVariant.Int)]
             )
             hLayer.updateFields()
 
@@ -708,33 +703,69 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
             horizons = []
 
-            for lprof, linG in enumerate(aLines):
+            print("# lines {}".format(len(aLines)))
+            print("# polys {}".format(len(aPolys)))
+            for lnum, linG in enumerate(aLines):
+                print("# lnum {}".format(lnum))
                 lin = QgsGeometry(linG)
                 self.progressBar.setValue(progress)
                 progress = progress + 1
 
                 polyMax = None
-                for _, poly in enumerate(aPolys[lprof+1:]):
+                for pnum, poly in enumerate(aPolys[lnum+1:]):
+                    if not poly.isGeosValid():
+                        print("! {} invalid".format(pnum))
                     if polyMax is not None and not polyMax.isNull():
                         lin = lin.difference(polyMax)
-                        polyMax = polyMax.combine(poly)
+                        polyMax = polyMax.combine(poly.makeValid())
                     else:
                         lin = lin.difference(poly)
-                        polyMax = QgsGeometry(poly)
+                        polyMax = poly.makeValid()
 
                 horizons.append(lin)
 
-            horizons.append(QgsGeometry(aLines[-1]))
+            feats = []
+            for fid, g in enumerate(horizons[::-1]):
+                feature = QgsFeature(fid)
+                feature.setAttributes([fid, 0])
+                feature.setGeometry(g)
+                feats.append(feature)
+
+            hLayer.dataProvider().addFeatures(feats)
+            hLayer.commitChanges()
+
+            # processing pour poursuivre...
+            # prolonger les lignes
+            extendlines = tools.run("native:extendlines", hLayer, params={'START_DISTANCE':1,'END_DISTANCE':1})
+            # intersection -> points
+            lineintersections = tools.run("native:lineintersections", hLayer, params={'INTERSECT':extendlines})
+            # générer des verticales pour découpage (expression) -> segments
+            geometrybyexpression = tools.run("native:geometrybyexpression", lineintersections, params={'EXPRESSION':' make_line( make_point(x($geometry), y($geometry)-1), make_point(x($geometry), y($geometry)+1))'})
+            # couper
+            splitwithlines = tools.run("native:splitwithlines", hLayer, params={'LINES':geometrybyexpression})
+            # exploser
+            ridges = tools.run("native:explodelines", splitwithlines, {}, name="ridges")
+
+            QgsProject.instance().addMapLayer(ridges)
+
+            ridges.startEditing()
+            for f in ridges.getFeatures():
+                gz = self.getGaz(f.geometry().centroid(), aPolys, f["demslicer_prof"])
+                f["demslicer_gaz"] = gz
+                ridges.updateFeature(f)
+
+            ridges.commitChanges()
+
 
             # test
-            fid = 0
+            """fid = 0
             feats = []
             for prof, g in enumerate(horizons):
                 feature = QgsFeature(fid)
                 feature.setAttributes([str(fid), 0, 0, prof])
                 feature.setGeometry(QgsGeometry(g))
                 feats.append(feature)
-                fid = fid + 1
+                fid = fid + 1"""
 
             # last line
             """cut = aLines[0].difference(aPolys[1])
@@ -789,7 +820,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                             feature = QgsFeature(fid)
                             feature.setAttributes(
                                 [
-                                    str(fid), 
+                                    str(fid),
                                     self.getGaz(ptm, aPolys, prof),
                                     self.getVisibility(ptm, aPolys, prof),
                                     prof
@@ -803,10 +834,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         self.log("Err ds {} ligne {} ".format(
                             inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
                         )
-                        self.log(e)          """
+                        self.log(e)
 
             hLayer.dataProvider().addFeatures(feats)
-            hLayer.commitChanges()
+            hLayer.commitChanges()"""
 
         # POI --------------------------------------------------------------------
         aH, aD = self.mt.azimuth('Y', 'H'), self.mt.azimuth('Y', 'D')
