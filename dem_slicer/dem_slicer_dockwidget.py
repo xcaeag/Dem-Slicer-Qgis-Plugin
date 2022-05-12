@@ -217,20 +217,17 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         except Exception:
             return 0
 
-    def getGaz(self, pt1, pt2, polys, prof):
+    def getGaz(self, pt, polys, prof):
         """
         Calculates the number of hidden profiles, behind a segment
 
-        :param pt1: first point of the segment
-        :param pt2: second point
+        :param pt: point to cjeck
         :param polys: profiles
         :param prof: 'depth' of the current segment
 
         :return: Number of hidden profiles
         :rtype: int
         """
-        pt = QgsPointXY((pt1.x() + pt2.x()) / 2, (pt1.y() + pt2.y()) / 2)
-
         for i, p in enumerate(polys[::-1]):
             if i > prof and p.contains(pt):
                 return i - prof
@@ -636,7 +633,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 "Ridges",
                 "memory",
             )
-            hLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "ridges.qml"))
+            # hLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "ridges.qml"))
             QgsProject.instance().addMapLayer(hLayer)
             hLayer.startEditing()
 
@@ -647,44 +644,104 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 [QgsField("demslicer_gaz", QVariant.Int)]
             )
             hLayer.dataProvider().addAttributes(
+                [QgsField("demslicer_visi", QVariant.Int)]
+            )
+            hLayer.dataProvider().addAttributes(
                 [QgsField("demslicer_prof", QVariant.Int)]
             )
             hLayer.updateFields()
 
+            """cuts = []
+            feats = []
+            for lprof, lin in enumerate(aLines):
+                print("# lprof {}".format(lprof))
+                cutGeom = lin
+                # chaque coupe vient découper la ligne
+                for pprof, poly in enumerate(aPolys):
+                    if pprof == lprof:
+                        continue
+
+                    print("#   pprof {}".format(pprof))
+
+                    # chaque élément du polygone
+                    newMultiPolylineXY = []
+                    for i, lineXY in enumerate(poly.asPolygon()):
+                        # découpe
+                        success, splits, _ = cutGeom.splitGeometry(lineXY, True)
+                        print("#     i {} splitr {} n {}".format(i, success, len(splits)))
+                        if success == 0:
+                            # on obtient une collection de geom
+                            for geom in splits:
+                                if geom.isMultipart():
+                                    for line in geom.asMultiPolyline():
+                                        newMultiPolylineXY.append(line)
+                                else:
+                                    newMultiPolylineXY.append(geom.asPolyline())
+                        else:
+                            if cutGeom.isMultipart():
+                                for line in cutGeom.asMultiPolyline():
+                                    newMultiPolylineXY.append(line)
+                            else:
+                                newMultiPolylineXY.append(cutGeom.asPolyline())
+
+                        cutGeom = QgsGeometry.fromMultiPolylineXY(newMultiPolylineXY)
+
+                cuts.append(cutGeom.asMultiPolyline())
+
+            fid = 0
+            for prof, multiPolyline in enumerate(cuts[::-1]):
+                for polyline in multiPolyline:
+                    feature = QgsFeature(fid)
+                    ptm = QgsPointXY((polyline[0].x() + polyline[1].x()) / 2, (polyline[0].y() + polyline[1].y()) / 2)
+                    feature.setAttributes(
+                        [
+                            str(fid),
+                            self.getGaz(ptm, aPolys, prof),
+                            self.getVisibility(ptm, aPolys, prof),
+                            prof
+                        ]
+                    )
+                    feature.setGeometry(QgsGeometry.fromPolylineXY(polyline))
+                    feats.append(feature)
+                    fid = fid+1
+            """
+
             horizons = []
-            hiddens = []
-            previousLine = None
-            previousPolygon = None
-            polyMax = None
-            for lin, poly in zip(aLines[::-1], aPolys[::-1]):
+
+            for lprof, linG in enumerate(aLines):
+                lin = QgsGeometry(linG)
                 self.progressBar.setValue(progress)
                 progress = progress + 1
-                if previousLine is None:
-                    previousLine = lin
-                    previousPolygon = poly
-                    continue
 
-                if polyMax is not None and not polyMax.isNull():
-                    cut = previousLine.difference(polyMax)
-                    inter = previousLine.intersection(polyMax)
-                    polyMax = polyMax.combine(previousPolygon)
-                else:
-                    cut = previousLine.difference(poly)
-                    inter = previousLine.intersection(poly)
-                    polyMax = previousPolygon
+                polyMax = None
+                for _, poly in enumerate(aPolys[lprof+1:]):
+                    if polyMax is not None and not polyMax.isNull():
+                        lin = lin.difference(polyMax)
+                        polyMax = polyMax.combine(poly)
+                    else:
+                        lin = lin.difference(poly)
+                        polyMax = QgsGeometry(poly)
 
-                horizons.append(cut)
-                hiddens.append(inter)
+                horizons.append(lin)
 
-                previousLine = lin
-                previousPolygon = poly
+            horizons.append(QgsGeometry(aLines[-1]))
+
+            # test
+            fid = 0
+            feats = []
+            for prof, g in enumerate(horizons):
+                feature = QgsFeature(fid)
+                feature.setAttributes([str(fid), 0, 0, prof])
+                feature.setGeometry(QgsGeometry(g))
+                feats.append(feature)
+                fid = fid + 1
 
             # last line
-            cut = aLines[0].difference(aPolys[1])
+            """cut = aLines[0].difference(aPolys[1])
             cut = cut.difference(polyMax)
-            horizons.append(cut)
+            horizons.append(cut)"""
 
-            fid = 1
+            """fid = 1
             feats = []
             for prof, lin in enumerate(horizons):
                 self.progressBar.setValue(progress)
@@ -699,8 +756,13 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                             for pt in polyline[1:]:
                                 seg = [pt0, pt]
                                 feature = QgsFeature(fid)
+                                ptm = QgsPointXY((pt0.x() + pt.x()) / 2, (pt0.y() + pt.y()) / 2)
                                 feature.setAttributes(
-                                    [str(fid), self.getGaz(pt0, pt, aPolys, prof), prof]
+                                    [
+                                        str(fid),
+                                        self.getGaz(ptm, aPolys, prof),
+                                        self.getVisibility(ptm, aPolys, prof),
+                                        prof]
                                 )
                                 feature.setGeometry(QgsGeometry.fromPolylineXY(seg))
                                 feats.append(feature)
@@ -722,10 +784,16 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                         pt0 = polyline[0]
                         for pt in polyline[1:]:
+                            ptm = QgsPointXY((pt0.x() + pt.x()) / 2, (pt0.y() + pt.y()) / 2)
                             seg = [pt0, pt]
                             feature = QgsFeature(fid)
                             feature.setAttributes(
-                                [str(fid), self.getGaz(pt0, pt, aPolys, prof), prof]
+                                [
+                                    str(fid), 
+                                    self.getGaz(ptm, aPolys, prof),
+                                    self.getVisibility(ptm, aPolys, prof),
+                                    prof
+                                ]
                             )
                             feature.setGeometry(QgsGeometry.fromPolylineXY(seg))
                             feats.append(feature)
@@ -735,46 +803,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         self.log("Err ds {} ligne {} ".format(
                             inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
                         )
-                        self.log(e)
-
-            # lignes sous horizons
-            for prof, lin in enumerate(hiddens):
-                if lin.isMultipart():
-                    try:
-                        pp = lin.asMultiPolyline()
-                        for polyline in pp:
-                            if len(polyline) == 0:
-                                continue
-
-                            feature = QgsFeature(fid)
-                            feature.setAttributes([str(fid), -1, prof])
-                            feature.setGeometry(QgsGeometry.fromPolylineXY(polyline))
-                            feats.append(feature)
-                            fid = fid + 1
-                    except Exception as e:
-                        self.log("Err ds {} ligne {} ".format(
-                            inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
-                        )
-                        self.log(e)
-                else:
-                    try:
-                        if lin.isNull():
-                            continue
-
-                        polyline = lin.asPolyline()
-                        if len(polyline) == 0:
-                            continue
-
-                        feature = QgsFeature(fid)
-                        feature.setAttributes([str(fid), -1, prof])
-                        feature.setGeometry(QgsGeometry.fromPolylineXY(polyline))
-                        feats.append(feature)
-                        fid = fid + 1
-                    except Exception as e:
-                        self.log("Err ds {} ligne {} ".format(
-                            inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
-                        )
-                        self.log(e)
+                        self.log(e)          """
 
             hLayer.dataProvider().addFeatures(feats)
             hLayer.commitChanges()
