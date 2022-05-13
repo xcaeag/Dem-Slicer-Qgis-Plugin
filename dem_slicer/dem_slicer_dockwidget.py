@@ -375,7 +375,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         zf = self.zFactor.value()
 
         # search for Z values
-        print("finalw:{} dx:{} - {} polylineIn, {} polylineOut".format(self.mt.finalWidth, dx, len(polylineIn), len(polylineOut)))
+        #print("finalw:{} dx:{} - {} polylineIn, {} polylineOut".format(self.mt.finalWidth, dx, len(polylineIn), len(polylineOut)))
         for lineIn, lineOut in zip(polylineIn, polylineOut):
             ds, zs = map(
                 list,
@@ -558,15 +558,15 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 horizons = []
 
                 for lnum, linG in enumerate(aLines):
-                    print("# lnum {}".format(lnum))
+                    #print("# lnum {}".format(lnum))
                     lin = QgsGeometry(linG)
                     self.progressBar.setValue(progress)
                     progress = progress + 1
 
                     polyMax = None
                     for pnum, poly in enumerate(aPolys[lnum+1:]):
-                        if not poly.isGeosValid():
-                            print("! {} invalid".format(pnum+lnum+1))
+                        #if not poly.isGeosValid():
+                        #    print("! {} invalid".format(pnum+lnum+1))
 
                         if polyMax is None:
                             polyMax = poly.makeValid()
