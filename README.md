@@ -4,6 +4,8 @@
 
 a QGis (3.10) plugin...
 
+Attention : doc for v0.1. Adaptations are coming soon !
+
 - [D.E.M. Slicer (en)](#dem-slicer-en)
   - [Prerequisites](#prerequisites)
   - [Examples](#examples)

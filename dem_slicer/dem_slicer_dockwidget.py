@@ -27,7 +27,10 @@ from .__about__ import DIR_PLUGIN_ROOT
 from .logic import tools
 
 from qgis.PyQt import QtWidgets, uic
-from qgis.PyQt.QtWidgets import QFileDialog
+from qgis.PyQt.QtWidgets import (
+    QFileDialog,
+    QApplication
+)
 from qgis.PyQt.QtCore import (
     QCoreApplication,
     QTranslator,
@@ -55,6 +58,7 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsRectangle,
 )
+
 from qgis.gui import QgsRubberBand, QgsMapTool
 import math
 import inspect
@@ -134,7 +138,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.base,
         ]
 
-        self.alert.setText("")
+        self.setAlert("")
 
     def tr(self, message):
         return QCoreApplication.translate("DemSlicer", message)
@@ -155,15 +159,20 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def log(self, message):
         QgsMessageLog.logMessage(str(message), "Extensions")
+        QApplication.processEvents()
+
+    def setAlert(self, message):
+        self.alert.setText(message)
+        QApplication.processEvents()
 
     def start(self):
         """Start the processus : activates tools, builds rubber bands..."""
         # check ap units
         if self.canvas.mapSettings().destinationCrs().mapUnits() == QgsUnitTypes.DistanceDegrees:
             self.warning(self.tr("Bad map unit (Degrees)"))
-            self.alert.setText(self.tr("Bad map unit (Degrees)"))
+            self.setAlert(self.tr("Bad map unit (Degrees)"))
         else:
-            self.alert.setText("")
+            self.setAlert("")
 
         rId = self.rasterList.itemData(self.rasterList.currentIndex())
         poiId = self.poiList.itemData(self.poiList.currentIndex())
@@ -470,393 +479,426 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             except Exception:
                 return None
 
-        progress = 0
-        self.progressBar.setMaximum(100)
+        try:
+            self.mt.rebuildCuttingLines(False)
 
-        self.mt.rebuildCuttingLines(False)
+            # initial bbox ... lines
+            aLines, aPolys = self.getLinesAndPolys(sample=False)
+            aLines = [QgsGeometry.fromPolylineXY(line) for line in aLines]
+            aPolys = [QgsGeometry.fromPolygonXY(poly) for poly in aPolys]
 
-        # initial bbox ... lines
-        aLines, aPolys = self.getLinesAndPolys(sample=False)
-        aLines = [QgsGeometry.fromPolylineXY(line) for line in aLines]
-        aPolys = [QgsGeometry.fromPolygonXY(poly) for poly in aPolys]
-
-        # Compass ------------------------------------------------------------------------
-        if not self.parallelView.isChecked() and self.renderCompass.isChecked():
-            compass = QgsVectorLayer(
-                "Point?crs={}".format(QgsProject.instance().crs().authid()),
-                "Compass",
-                "memory",
+            progress = 0
+            self.progressBar.setMaximum(
+                len(aLines) if self.renderLines.isChecked() else 0  # lines
+                + len(aPolys) if self.renderPolygons.isChecked() else 0  # polygons
+                + 7*10+len(aPolys) if self.renderRidges.isChecked() else 0  # ridges
+                # todo : poi
             )
-            aLeft = self.mt.azimuth('Y', 'D2')
-            aRight = self.mt.azimuth('Y', 'C2')
-            # self.log("{} {}".format(aLeft, aRight))
-            if aLeft > aRight:
-                aRight = aRight + 360
 
-            compass.startEditing()
-            feats = []
-            compass.dataProvider().addAttributes(
-                [QgsField("demslicer_azimuth", QVariant.Double)]
-            )
-            compass.updateFields()
-            for i, alpha in enumerate(range(round(aLeft), round(aRight))):
-                c = QgsPoint(
-                    self.projBox.xMinimum() + (i*((self.projBox.xMaximum()-self.projBox.xMinimum())/(aRight-aLeft))),
-                    self.yMin-self.base.value())
-                feature = QgsFeature()
-                feature.setAttributes([alpha])
-                feature.setGeometry(c)
-                feats.append(feature)
-
-            compass.dataProvider().addFeatures(feats)
-            compass.commitChanges()
-
-            QgsProject.instance().addMapLayer(compass)
-            compass.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/compass.qml"))
-
-        # Line Slices --------------------------------------------------------------------
-        if self.renderLines.isChecked():
-            layer = QgsVectorLayer(
-                "MultiLineString?crs={}".format(QgsProject.instance().crs().authid()),
-                "Lines",
-                "memory",
-            )
-            self.buildLayer(layer, aLines, progress)
-            layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/lines.qml"))
-
-        # Poly Slices --------------------------------------------------------------------
-        if self.renderPolygons.isChecked():
-            pLayer = QgsVectorLayer(
-                "Polygon?crs={}".format(QgsProject.instance().crs().authid()),
-                "Polygons",
-                "memory",
-            )
-            self.buildLayer(pLayer, aPolys, progress)
-            if self.renderRidges.isChecked():
-                pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/polygons_ridges.qml"))
-            else:
-                pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/polygons.qml"))
-
-        # RIDGES --------------------------------------------------------------------
-        if self.renderRidges.isChecked():
-            try:
-                hLayer = QgsVectorLayer(
-                    "LineString?crs={}".format(QgsProject.instance().crs().authid()),
-                    "Ridges",
+            # Compass ------------------------------------------------------------------------
+            if not self.parallelView.isChecked() and self.renderCompass.isChecked():
+                self.setAlert(self.tr("build compass"))
+                compass = QgsVectorLayer(
+                    "Point?crs={}".format(QgsProject.instance().crs().authid()),
+                    "Compass",
                     "memory",
                 )
-                hLayer.startEditing()
+                aLeft = self.mt.azimuth('Y', 'D2')
+                aRight = self.mt.azimuth('Y', 'C2')
+                # self.log("{} {}".format(aLeft, aRight))
+                if aLeft > aRight:
+                    aRight = aRight + 360
 
-                hLayer.dataProvider().addAttributes(
-                    [QgsField("demslicer_prof", QVariant.Int)]
-                )
-                hLayer.dataProvider().addAttributes(
-                    [QgsField("demslicer_gaz", QVariant.Int)]
-                )
-                hLayer.updateFields()
-
-                horizons = []
-
-                for lnum, linG in enumerate(aLines):
-                    #print("# lnum {}".format(lnum))
-                    lin = QgsGeometry(linG)
-                    self.progressBar.setValue(progress)
-                    progress = progress + 1
-
-                    polyMax = None
-                    for pnum, poly in enumerate(aPolys[lnum+1:]):
-                        #if not poly.isGeosValid():
-                        #    print("! {} invalid".format(pnum+lnum+1))
-
-                        if polyMax is None:
-                            polyMax = poly.makeValid()
-                        else:
-                            polyMax = polyMax.combine(poly.makeValid())
-
-                        lin = lin.difference(polyMax)
-
-                    horizons.append(lin)
-
+                compass.startEditing()
                 feats = []
-                for fid, g in enumerate(horizons[::-1]):
-                    feature = QgsFeature(fid)
-                    feature.setAttributes([fid, 0])
-                    feature.setGeometry(g)
+                compass.dataProvider().addAttributes(
+                    [QgsField("demslicer_azimuth", QVariant.Double)]
+                )
+                compass.updateFields()
+                for i, alpha in enumerate(range(round(aLeft), round(aRight))):
+                    c = QgsPoint(
+                        self.projBox.xMinimum() + (i*((self.projBox.xMaximum()-self.projBox.xMinimum())/(aRight-aLeft))),
+                        self.yMin-self.base.value())
+                    feature = QgsFeature()
+                    feature.setAttributes([alpha])
+                    feature.setGeometry(c)
                     feats.append(feature)
 
-                hLayer.dataProvider().addFeatures(feats)
-                hLayer.commitChanges()
+                compass.dataProvider().addFeatures(feats)
+                compass.commitChanges()
 
-                # processing pour poursuivre...
+                QgsProject.instance().addMapLayer(compass)
+                compass.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/compass.qml"))
+
+            # Line Slices --------------------------------------------------------------------
+            if self.renderLines.isChecked():
+                self.setAlert(self.tr("build lines"))
+                layer = QgsVectorLayer(
+                    "MultiLineString?crs={}".format(QgsProject.instance().crs().authid()),
+                    "Lines",
+                    "memory",
+                )
+                self.buildLayer(layer, aLines, progress)
+                layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/lines.qml"))
+
+            # Poly Slices --------------------------------------------------------------------
+            if self.renderPolygons.isChecked():
+                self.setAlert(self.tr("build polygons"))
+                pLayer = QgsVectorLayer(
+                    "Polygon?crs={}".format(QgsProject.instance().crs().authid()),
+                    "Polygons",
+                    "memory",
+                )
+                self.buildLayer(pLayer, aPolys, progress)
+                if self.renderRidges.isChecked():
+                    pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/polygons_ridges.qml"))
+                else:
+                    pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/polygons.qml"))
+
+            # RIDGES --------------------------------------------------------------------
+            if self.renderRidges.isChecked():
+                self.setAlert(self.tr("build ridges"))
                 try:
-                    # prolonger les lignes
-                    extendlines = tools.run("native:extendlines", hLayer, params={'START_DISTANCE': 1, 'END_DISTANCE': 1})
-                    # intersection -> points
-                    lineintersections = tools.run("native:lineintersections", hLayer, params={'INTERSECT': extendlines})
-                    # filtrer
-                    # todo
-                    # générer des verticales pour découpage (expression) -> segments
-                    geometrybyexpression = tools.run("native:geometrybyexpression", lineintersections, params={'EXPRESSION': 'make_line( make_point(x($geometry), y($geometry)-1), make_point(x($geometry), y($geometry)+1))'})
-                    # couper
-                    splitwithlines = tools.run("native:splitwithlines", hLayer, params={'LINES': geometrybyexpression})
-                    # exploser
-                    ridges = tools.run("native:explodelines", splitwithlines, {}, name="ridges")
-
-                    ridges.startEditing()
-                    for f in ridges.getFeatures():
-                        gz = self.getGaz(f.geometry().centroid(), aPolys, f["demslicer_prof"])
-                        f["demslicer_gaz"] = gz
-                        ridges.updateFeature(f)
-
-                    ridges.commitChanges()
-                    ridges.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ridges.qml"))
-
-                    QgsProject.instance().addMapLayer(ridges)
-
-                except Exception:
-                    self.warning(self.tr("Error in processing step."))
-
-            except Exception:
-                self.warning(self.tr("Error in ridges construction."))
-
-        # POI --------------------------------------------------------------------
-        aH, aD = self.mt.azimuth('Y', 'H'), self.mt.azimuth('Y', 'D2')
-        if aD > aH:
-            aH = aH + 360
-        angleVue = 2 * (aH - aD)
-
-        poiId = self.poiList.itemData(self.poiList.currentIndex())
-        poiLayer = None
-        if poiId != 0:
-            poiLayer = QgsProject.instance().mapLayer(poiId)
-            mapcrs = self.canvas.mapSettings().destinationCrs()
-            xMap2Poi = QgsCoordinateTransform(
-                mapcrs, poiLayer.crs(), QgsProject.instance()
-            )
-            xPoi2Map = QgsCoordinateTransform(
-                poiLayer.crs(), mapcrs, QgsProject.instance()
-            )
-
-            # filter points (convex envelope)
-            zon = QgsGeometry.fromMultiPolylineXY(self.mt.getLines())
-            rq = QgsFeatureRequest().setFilterRect(
-                xMap2Poi.transform(zon.boundingBox())
-            )
-            rq.setFlags(QgsFeatureRequest.ExactIntersect)
-            features = poiLayer.getFeatures(rq)
-
-            hull = zon.convexHull()
-            if (
-                poiLayer.wkbType() == QgsWkbTypes.Point
-                or poiLayer.wkbType() == QgsWkbTypes.MultiPoint
-            ):
-                feats = []
-                fid = 1
-                for feat in features:
-                    poiPointXY = xPoi2Map.transform(
-                        feat.geometry().asPoint().x(), feat.geometry().asPoint().y()
-                    )
-                    if hull.contains(poiPointXY):
-                        z = self.getElevation(
-                            self.xMap2Raster.transform(poiPointXY.x(), poiPointXY.y())
-                        )
-                        # reprojects points
-                        azimuth = 0
-                        if self.parallelView.isChecked():
-                            depth = self.mt.d0 + self.mt.segCD.distance(
-                                QgsGeometry.fromPointXY(poiPointXY)
-                            )
-                            newX = self.mt.x('R') + self.mt.segAD.distance(
-                                QgsGeometry.fromPointXY(poiPointXY)
-                            )
-                        else:
-                            depth = self.mt.pointXY('Y').distance(poiPointXY)
-                            azimuth = self.mt.pointXY('Y').azimuth(poiPointXY)
-                            az = azimuth + 360 if aD > azimuth else azimuth
-                            fx = (az - aD) / angleVue
-                            newX = self.mt.x('R') + fx * self.mt.finalWidth
-
-                        newZ = self.getNewZ(z, depth)
-                        prof = self.getProf(depth)
-                        newY = (
-                            self.mt.y('R')
-                            + (newZ * self.zFactor.value())
-                            + (depth * self.zShift.value() / self.mt.zoneDepth)
-                        )
-
-                        pt = QgsGeometry.fromPointXY(QgsPointXY(newX, newY))
-                        visi = self.getVisibility(pt, aPolys, prof)
-                        fet0 = QgsFeature(fid)
-                        fet0.setAttributes(
-                            feat.attributes()
-                            + [str(fid), prof, z, depth, visi, azimuth]
-                        )
-                        fid = fid + 1
-                        fet0.setGeometry(pt)
-                        feats.append(fet0)
-
-                if len(feats) > 0:
-                    layer = QgsVectorLayer(
-                        "MultiPoint?crs={}".format(
-                            QgsProject.instance().crs().authid()
-                        ),
-                        "P.O.I.",
+                    hLayer = QgsVectorLayer(
+                        "LineString?crs={}".format(QgsProject.instance().crs().authid()),
+                        "Ridges",
                         "memory",
                     )
-                    QgsProject.instance().addMapLayer(layer)
-                    layer.startEditing()
-                    layer.dataProvider().addAttributes(
-                        poiLayer.dataProvider().fields().toList()
-                        + [
-                            QgsField("demslicer_num", QVariant.Int),
-                            QgsField("demslicer_prof", QVariant.Int),
-                            QgsField("demslicer_z", QVariant.Int),
-                            QgsField(
-                                "demslicer_depth", QVariant.Double, "double", 4, 1
-                            ),
-                            QgsField("demslicer_visi", QVariant.Int),
-                            QgsField(
-                                "demslicer_azimuth", QVariant.Double, "double", 4, 1
-                            ),
-                        ]
+                    hLayer.startEditing()
+
+                    hLayer.dataProvider().addAttributes(
+                        [QgsField("demslicer_prof", QVariant.Int)]
                     )
-                    layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
-                    layer.updateFields()
+                    hLayer.dataProvider().addAttributes(
+                        [QgsField("demslicer_gaz", QVariant.Int)]
+                    )
+                    hLayer.updateFields()
 
-                    layer.dataProvider().addFeatures(feats)
-                    layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/poi.qml"))
-                    layer.commitChanges()
+                    horizons = []
 
-            # Projeter des lignes ou polygones
-            if (
-                poiLayer.wkbType() == QgsWkbTypes.LineString
-                or poiLayer.wkbType() == QgsWkbTypes.MultiLineString
-            ):
-                feats = []
-                fid = 1
-                for feat in features:
-                    geom = QgsGeometry(feat.geometry())
-                    geom.transform(xPoi2Map)
-                    geom = geom.intersection(hull)
+                    for lnum, linG in enumerate(aLines):
+                        # print("# lnum {}".format(lnum))
+                        lin = QgsGeometry(linG)
+                        self.progressBar.setValue(progress)
+                        progress = progress + 1
+
+                        polyMax = None
+                        for _, poly in enumerate(aPolys[lnum+1:]):
+                            # if not poly.isGeosValid():
+                            #    print("! {} invalid".format(pnum+lnum+1))
+
+                            if polyMax is None:
+                                polyMax = poly.makeValid()
+                            else:
+                                polyMax = polyMax.combine(poly.makeValid())
+
+                            lin = lin.difference(polyMax)
+
+                        horizons.append(lin)
+
+                    feats = []
+                    for fid, g in enumerate(horizons[::-1]):
+                        feature = QgsFeature(fid)
+                        feature.setAttributes([fid, 0])
+                        feature.setGeometry(g)
+                        feats.append(feature)
+
+                    hLayer.dataProvider().addFeatures(feats)
+                    hLayer.commitChanges()
+
+                    # processing pour poursuivre...
                     try:
-                        geoms = [geom]
-                        for _, cutingLine in enumerate(
-                            self.mt.getLines()
-                        ):
-                            newGeoms = []
-                            for g in geoms:
-                                _, rgeoms, _ = g.splitGeometry(cutingLine, True)
-                                newGeoms = newGeoms + rgeoms
+                        # prolonger les lignes
+                        extendlines = tools.run("native:extendlines", hLayer, params={'START_DISTANCE': 1, 'END_DISTANCE': 1})
+                        self.progressBar.setValue(progress)
+                        progress = progress + 10
+                        # intersection -> points
+                        lineintersections = tools.run("native:lineintersections", hLayer, params={'INTERSECT': extendlines})
+                        self.progressBar.setValue(progress)
+                        progress = progress + 10
+                        # filtrer
+                        # todo
+                        # générer des verticales pour découpage (expression) -> segments
+                        geometrybyexpression = tools.run("native:geometrybyexpression", lineintersections, params={'EXPRESSION': 'make_line( make_point(x($geometry), y($geometry)-1), make_point(x($geometry), y($geometry)+1))'})
+                        self.progressBar.setValue(progress)
+                        progress = progress + 10
+                        # couper
+                        splitwithlines = tools.run("native:splitwithlines", hLayer, params={'LINES': geometrybyexpression})
+                        self.progressBar.setValue(progress)
+                        progress = progress + 10
+                        # exploser
+                        ridges = tools.run("native:explodelines", splitwithlines, {}, name="ridges")
+                        self.progressBar.setValue(progress)
+                        progress = progress + 10
 
-                            geoms = geoms + newGeoms
+                        ridges.startEditing()
+                        for f in ridges.getFeatures():
+                            gz = self.getGaz(f.geometry().centroid(), aPolys, f["demslicer_prof"])
+                            f["demslicer_gaz"] = gz
+                            ridges.updateFeature(f)
+                        self.progressBar.setValue(progress)
+                        progress = progress + 10
 
-                        for geom in geoms:
-                            try:
-                                fet = projLineString(feat, geom.asPolyline())
-                                if fet is not None:
-                                    feats.append(fet)
-                                    fid = fid + 1
-                            except Exception:
-                                collec = geom.asGeometryCollection()
-                                for geom in collec:
+                        ridges.commitChanges()
+
+                        # collect (réduire le nb d'entités)
+                        ridges = tools.run("native:collect", ridges, {'FIELD':['demslicer_prof', 'demslicer_gaz']}, name="ridges")
+                        self.progressBar.setValue(progress)
+                        progress = progress + 10
+
+                        ridges.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ridges.qml"))
+
+                        QgsProject.instance().addMapLayer(ridges)
+
+                    except Exception:
+                        self.warning(self.tr("Error in processing step."))
+
+                except Exception:
+                    self.warning(self.tr("Error in ridges construction."))
+
+            # POI --------------------------------------------------------------------
+            aH, aD = self.mt.azimuth('Y', 'H'), self.mt.azimuth('Y', 'D2')
+            if aD > aH:
+                aH = aH + 360
+            angleVue = 2 * (aH - aD)
+
+            poiId = self.poiList.itemData(self.poiList.currentIndex())
+            poiLayer = None
+            if poiId != 0:
+                self.setAlert(self.tr("project POIs"))
+
+                poiLayer = QgsProject.instance().mapLayer(poiId)
+                mapcrs = self.canvas.mapSettings().destinationCrs()
+                xMap2Poi = QgsCoordinateTransform(
+                    mapcrs, poiLayer.crs(), QgsProject.instance()
+                )
+                xPoi2Map = QgsCoordinateTransform(
+                    poiLayer.crs(), mapcrs, QgsProject.instance()
+                )
+
+                # filter points (convex envelope)
+                zon = QgsGeometry.fromMultiPolylineXY(self.mt.getLines())
+                rq = QgsFeatureRequest().setFilterRect(
+                    xMap2Poi.transform(zon.boundingBox())
+                )
+                rq.setFlags(QgsFeatureRequest.ExactIntersect)
+                features = poiLayer.getFeatures(rq)
+
+                hull = zon.convexHull()
+                if (
+                    poiLayer.wkbType() == QgsWkbTypes.Point
+                    or poiLayer.wkbType() == QgsWkbTypes.MultiPoint
+                ):
+                    feats = []
+                    fid = 1
+                    for feat in features:
+                        poiPointXY = xPoi2Map.transform(
+                            feat.geometry().asPoint().x(), feat.geometry().asPoint().y()
+                        )
+                        if hull.contains(poiPointXY):
+                            z = self.getElevation(
+                                self.xMap2Raster.transform(poiPointXY.x(), poiPointXY.y())
+                            )
+                            # reprojects points
+                            azimuth = 0
+                            if self.parallelView.isChecked():
+                                depth = self.mt.d0 + self.mt.segCD.distance(
+                                    QgsGeometry.fromPointXY(poiPointXY)
+                                )
+                                newX = self.mt.x('R') + self.mt.segAD.distance(
+                                    QgsGeometry.fromPointXY(poiPointXY)
+                                )
+                            else:
+                                depth = self.mt.pointXY('Y').distance(poiPointXY)
+                                azimuth = self.mt.pointXY('Y').azimuth(poiPointXY)
+                                az = azimuth + 360 if aD > azimuth else azimuth
+                                fx = (az - aD) / angleVue
+                                newX = self.mt.x('R') + fx * self.mt.finalWidth
+
+                            newZ = self.getNewZ(z, depth)
+                            prof = self.getProf(depth)
+                            newY = (
+                                self.mt.y('R')
+                                + (newZ * self.zFactor.value())
+                                + (depth * self.zShift.value() / self.mt.zoneDepth)
+                            )
+
+                            pt = QgsGeometry.fromPointXY(QgsPointXY(newX, newY))
+                            visi = self.getVisibility(pt, aPolys, prof)
+                            fet0 = QgsFeature(fid)
+                            fet0.setAttributes(
+                                feat.attributes()
+                                + [str(fid), prof, z, depth, visi, azimuth]
+                            )
+                            fid = fid + 1
+                            fet0.setGeometry(pt)
+                            feats.append(fet0)
+
+                    if len(feats) > 0:
+                        layer = QgsVectorLayer(
+                            "MultiPoint?crs={}".format(
+                                QgsProject.instance().crs().authid()
+                            ),
+                            "P.O.I.",
+                            "memory",
+                        )
+                        QgsProject.instance().addMapLayer(layer)
+                        layer.startEditing()
+                        layer.dataProvider().addAttributes(
+                            poiLayer.dataProvider().fields().toList()
+                            + [
+                                QgsField("demslicer_num", QVariant.Int),
+                                QgsField("demslicer_prof", QVariant.Int),
+                                QgsField("demslicer_z", QVariant.Int),
+                                QgsField(
+                                    "demslicer_depth", QVariant.Double, "double", 4, 1
+                                ),
+                                QgsField("demslicer_visi", QVariant.Int),
+                                QgsField(
+                                    "demslicer_azimuth", QVariant.Double, "double", 4, 1
+                                ),
+                            ]
+                        )
+                        layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
+                        layer.updateFields()
+
+                        layer.dataProvider().addFeatures(feats)
+                        layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/poi.qml"))
+                        layer.commitChanges()
+
+                # Projeter des lignes ou polygones
+                if (
+                    poiLayer.wkbType() == QgsWkbTypes.LineString
+                    or poiLayer.wkbType() == QgsWkbTypes.MultiLineString
+                ):
+                    feats = []
+                    fid = 1
+                    for feat in features:
+                        geom = QgsGeometry(feat.geometry())
+                        geom.transform(xPoi2Map)
+                        geom = geom.intersection(hull)
+                        try:
+                            geoms = [geom]
+                            for _, cutingLine in enumerate(
+                                self.mt.getLines()
+                            ):
+                                newGeoms = []
+                                for g in geoms:
+                                    _, rgeoms, _ = g.splitGeometry(cutingLine, True)
+                                    newGeoms = newGeoms + rgeoms
+
+                                geoms = geoms + newGeoms
+
+                            for geom in geoms:
+                                try:
                                     fet = projLineString(feat, geom.asPolyline())
                                     if fet is not None:
                                         feats.append(fet)
                                         fid = fid + 1
-                    except Exception as e:
-                        self.log("Err ds {} ligne {} ".format(
-                            inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+                                except Exception:
+                                    collec = geom.asGeometryCollection()
+                                    for geom in collec:
+                                        fet = projLineString(feat, geom.asPolyline())
+                                        if fet is not None:
+                                            feats.append(fet)
+                                            fid = fid + 1
+                        except Exception as e:
+                            self.log("Err ds {} ligne {} ".format(
+                                inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+                            )
+                            self.log(e)
+
+                    if len(feats) > 0:
+                        layer = QgsVectorLayer(
+                            "MultiLineString?crs={}".format(
+                                QgsProject.instance().crs().authid()
+                            ),
+                            "PROJ.",
+                            "memory",
                         )
-                        self.log(e)
+                        QgsProject.instance().addMapLayer(layer)
+                        layer.startEditing()
+                        layer.dataProvider().addAttributes(
+                            poiLayer.dataProvider().fields().toList()
+                            + [
+                                QgsField("demslicer_num", QVariant.Int),
+                                QgsField("demslicer_visi", QVariant.Int),
+                                QgsField("demslicer_prof", QVariant.Int),
+                            ]
+                        )
+                        layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
+                        layer.updateFields()
 
-                if len(feats) > 0:
-                    layer = QgsVectorLayer(
-                        "MultiLineString?crs={}".format(
-                            QgsProject.instance().crs().authid()
-                        ),
-                        "PROJ.",
-                        "memory",
-                    )
-                    QgsProject.instance().addMapLayer(layer)
-                    layer.startEditing()
-                    layer.dataProvider().addAttributes(
-                        poiLayer.dataProvider().fields().toList()
-                        + [
-                            QgsField("demslicer_num", QVariant.Int),
-                            QgsField("demslicer_visi", QVariant.Int),
-                            QgsField("demslicer_prof", QVariant.Int),
-                        ]
-                    )
-                    layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
-                    layer.updateFields()
+                        layer.dataProvider().addFeatures(feats)
+                        layer.commitChanges()
 
-                    layer.dataProvider().addFeatures(feats)
-                    layer.commitChanges()
+                if (
+                    poiLayer.wkbType() == QgsWkbTypes.Polygon
+                    or poiLayer.wkbType() == QgsWkbTypes.MultiPolygon
+                ):
+                    feats = []
+                    fid = 1
+                    for feat in features:
+                        geom = QgsGeometry(feat.geometry())
+                        geom.transform(xPoi2Map)
+                        geom = geom.intersection(hull)
+                        try:
+                            geoms = [geom]
+                            for _, cutingLine in enumerate(
+                                self.mt.getLines()
+                            ):
+                                newGeoms = []
+                                for g in geoms:
+                                    _, rgeoms, _ = g.splitGeometry(cutingLine, True)
+                                    newGeoms = newGeoms + rgeoms
 
-            if (
-                poiLayer.wkbType() == QgsWkbTypes.Polygon
-                or poiLayer.wkbType() == QgsWkbTypes.MultiPolygon
-            ):
-                feats = []
-                fid = 1
-                for feat in features:
-                    geom = QgsGeometry(feat.geometry())
-                    geom.transform(xPoi2Map)
-                    geom = geom.intersection(hull)
-                    try:
-                        geoms = [geom]
-                        for _, cutingLine in enumerate(
-                            self.mt.getLines()
-                        ):
-                            newGeoms = []
-                            for g in geoms:
-                                _, rgeoms, _ = g.splitGeometry(cutingLine, True)
-                                newGeoms = newGeoms + rgeoms
+                                geoms = geoms + newGeoms
 
-                            geoms = geoms + newGeoms
-
-                        for geom in geoms:
-                            try:
-                                fet = projPolygon(feat, geom.asPolygon())
-                                if fet is not None:
-                                    feats.append(fet)
-                                    fid = fid + 1
-                            except Exception:
-                                collec = geom.asGeometryCollection()
-                                for geom in collec:
+                            for geom in geoms:
+                                try:
                                     fet = projPolygon(feat, geom.asPolygon())
                                     if fet is not None:
                                         feats.append(fet)
                                         fid = fid + 1
-                    except Exception as e:
-                        self.log("Err ds {} ligne {} ".format(
-                            inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+                                except Exception:
+                                    collec = geom.asGeometryCollection()
+                                    for geom in collec:
+                                        fet = projPolygon(feat, geom.asPolygon())
+                                        if fet is not None:
+                                            feats.append(fet)
+                                            fid = fid + 1
+                        except Exception as e:
+                            self.log("Err ds {} ligne {} ".format(
+                                inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
+                            )
+                            self.log(e)
+
+                    if len(feats) > 0:
+                        layer = QgsVectorLayer(
+                            "Polygon?crs={}".format(QgsProject.instance().crs().authid()),
+                            "PROJ.",
+                            "memory",
                         )
-                        self.log(e)
+                        QgsProject.instance().addMapLayer(layer)
+                        layer.startEditing()
+                        layer.dataProvider().addAttributes(
+                            poiLayer.dataProvider().fields().toList()
+                            + [
+                                QgsField("demslicer_num", QVariant.Int),
+                                QgsField("demslicer_visi", QVariant.Int),
+                                QgsField("demslicer_prof", QVariant.Int),
+                            ]
+                        )
+                        layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
+                        layer.updateFields()
 
-                if len(feats) > 0:
-                    layer = QgsVectorLayer(
-                        "Polygon?crs={}".format(QgsProject.instance().crs().authid()),
-                        "PROJ.",
-                        "memory",
-                    )
-                    QgsProject.instance().addMapLayer(layer)
-                    layer.startEditing()
-                    layer.dataProvider().addAttributes(
-                        poiLayer.dataProvider().fields().toList()
-                        + [
-                            QgsField("demslicer_num", QVariant.Int),
-                            QgsField("demslicer_visi", QVariant.Int),
-                            QgsField("demslicer_prof", QVariant.Int),
-                        ]
-                    )
-                    layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
-                    layer.updateFields()
-
-                    layer.dataProvider().addFeatures(feats)
-                    sourceStyles = poiLayer.styleManager().mapLayerStyles()
-                    layer.styleManager().addStyle("poi", list(sourceStyles.values())[0])
-                    layer.commitChanges()
+                        layer.dataProvider().addFeatures(feats)
+                        sourceStyles = poiLayer.styleManager().mapLayerStyles()
+                        layer.styleManager().addStyle("poi", list(sourceStyles.values())[0])
+                        layer.commitChanges()
+        finally:
+            self.setAlert("")
+            self.progressBar.setValue(0)
 
     def build(self):
         """
@@ -1211,7 +1253,7 @@ class MapTool(QgsMapTool):
         # thumbnails skylines - profil échantillon projeté
         self.rubbers['thumbnail'].setStrokeColor(QColor(200, 120, 70, 130))
         self.rubbers['thumbnail'].setWidth(0.8)
-        self.rubbers['R'].setStrokeColor(QColor(200, 120, 70, 200))
+        self.rubbers['R'].setStrokeColor(QColor(120, 70, 200, 200))
         # last line (blue)
         self.rubbers['horizon'].setStrokeColor(QColor(70, 100, 255, 200))
         self.rubbers['horizon'].setWidth(2)
@@ -1433,7 +1475,7 @@ class MapTool(QgsMapTool):
         if nbPoints > 100000:
             alert = alert + "Attention : {} points\n".format(nbPoints)
 
-        self.widget.alert.setText(alert)
+        self.widget.setAlert(alert)
 
     def getLines(self):
         return self.cuttingLines
