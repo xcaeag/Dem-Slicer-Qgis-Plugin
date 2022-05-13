@@ -292,8 +292,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if self.parallelView.isChecked():
             newX = self.mt.x('R') + self.mt.segAD.distance(QgsGeometry.fromPointXY(pt))
         else:
-            aLeft = self.mt.azimuth('Y', 'D')
-            aRight = self.mt.azimuth('Y', 'C')
+            aLeft = self.mt.azimuth('Y', 'D2')
+            aRight = self.mt.azimuth('Y', 'C2')
             if aRight < aLeft:
                 aRight = aRight + 360
             aPeak = self.mt.pointXY('Y').azimuth(pt)
@@ -308,7 +308,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             Return horizon line and others polygons
         """
         _, aPolys = self.getLinesAndPolys(sample=True)
-        return QgsGeometry.fromPolygonXY(aPolys[-1]), QgsGeometry.fromMultiPolygonXY(aPolys)
+        return QgsGeometry.fromPolygonXY(aPolys[0]), QgsGeometry.fromMultiPolygonXY(aPolys)
 
     def getPeakGeom(self, ptPeak):
         ptXY = self.getProjectionPoint(ptPeak)
@@ -341,36 +341,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def getSourcePolylines(self, dx, sample=False):
         if sample:
-            multiPolyline = self.mt.getSampleLines()
-            # lineCount = len(lines)
+            return self.mt.getSampleLines()
         else:
-            multiPolyline = self.mt.getLines()
-            # lineCount = self.lineCount.value()
-
-        return multiPolyline
-
-        """if self.parallelView.isChecked():
-            return geom.densifyByDistance(dx).asMultiPolyline()
-        else:
-            alpha = self.mt.angle('D2', 'Y', 'C2')
-            dAlpha = alpha / (self.mt.finalWidth / dx)
-
-            leftEdge = (
-                self.mt.geomPolyline(['A2', 'D2'])
-                .densifyByCount(lineCount - 2)
-                .asPolyline()
-            )
-            polyline = []
-            for p in leftEdge:
-                line = []
-                for nx in range(2 + int(self.mt.finalWidth / dx)):
-                    g = QgsGeometry.fromPointXY(p)
-                    g.rotate(nx * dAlpha, self.mt.pointXY('Y'))
-                    line.append(g.asPoint())
-
-                polyline.append(line)
-
-            return polyline"""
+            return self.mt.getLines()
 
     def getProjPolylines(self, dx, sample=False):
         if sample:
@@ -382,7 +355,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def getLinesAndPolys(self, sample=False):
         if sample:
-            dx = self.mt.finalWidth / 15
+            dx = self.mt.finalWidth / 15.0
         else:
             dx = self.xStep.value()
 
@@ -398,6 +371,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         zf = self.zFactor.value()
 
         # search for Z values
+        print("finalw:{} dx:{} - {} polylineIn, {} polylineOut".format(self.mt.finalWidth, dx, len(polylineIn), len(polylineOut)))
         for lineIn, lineOut in zip(polylineIn, polylineOut):
             ds, zs = map(
                 list,
@@ -433,10 +407,18 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             aLines.append(lineOut)
             self.yMin = ymin
 
-        for lineOut in polylineOut:
-            lineOut.append(QgsPointXY(self.projBox.xMaximum(), self.yMin-self.base.value()))
-            lineOut.append(QgsPointXY(self.projBox.xMinimum(), self.yMin-self.base.value()))
-            aPolys.append([lineOut])
+        if sample:
+            # pas de copy necessaire
+            for lineOut in polylineOut:
+                lineOut.append(QgsPointXY(self.projBox.xMaximum(), self.yMin-self.base.value()))
+                lineOut.append(QgsPointXY(self.projBox.xMinimum(), self.yMin-self.base.value()))
+                aPolys.append([lineOut])
+        else:
+            # copy 
+            for lineOut in [lin.copy() for lin in polylineOut]:
+                lineOut.append(QgsPointXY(self.projBox.xMaximum(), self.yMin-self.base.value()))
+                lineOut.append(QgsPointXY(self.projBox.xMinimum(), self.yMin-self.base.value()))
+                aPolys.append([lineOut])
 
         return aLines, aPolys
 
@@ -483,6 +465,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         progress = 0
         self.progressBar.setMaximum(100)
 
+        self.mt.rebuildCuttingLines(False)
+
         # initial bbox ... lines
         aLines, aPolys = self.getLinesAndPolys(sample=False)
         aLines = [QgsGeometry.fromPolylineXY(line) for line in aLines]
@@ -495,8 +479,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 "Compass",
                 "memory",
             )
-            aLeft = self.mt.azimuth('Y', 'D')
-            aRight = self.mt.azimuth('Y', 'C')
+            aLeft = self.mt.azimuth('Y', 'D2')
+            aRight = self.mt.azimuth('Y', 'C2')
             # self.log("{} {}".format(aLeft, aRight))
             if aLeft > aRight:
                 aRight = aRight + 360
@@ -598,15 +582,15 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 # processing pour poursuivre...
                 try:
                     # prolonger les lignes
-                    extendlines = tools.run("native:extendlines", hLayer, params={'START_DISTANCE':1,'END_DISTANCE':1})
+                    extendlines = tools.run("native:extendlines", hLayer, params={'START_DISTANCE': 1, 'END_DISTANCE': 1})
                     # intersection -> points
-                    lineintersections = tools.run("native:lineintersections", hLayer, params={'INTERSECT':extendlines})
+                    lineintersections = tools.run("native:lineintersections", hLayer, params={'INTERSECT': extendlines})
                     # filtrer
                     # todo
                     # générer des verticales pour découpage (expression) -> segments
-                    geometrybyexpression = tools.run("native:geometrybyexpression", lineintersections, params={'EXPRESSION':' make_line( make_point(x($geometry), y($geometry)-1), make_point(x($geometry), y($geometry)+1))'})
+                    geometrybyexpression = tools.run("native:geometrybyexpression", lineintersections, params={'EXPRESSION': 'make_line( make_point(x($geometry), y($geometry)-1), make_point(x($geometry), y($geometry)+1))'})
                     # couper
-                    splitwithlines = tools.run("native:splitwithlines", hLayer, params={'LINES':geometrybyexpression})
+                    splitwithlines = tools.run("native:splitwithlines", hLayer, params={'LINES': geometrybyexpression})
                     # exploser
                     ridges = tools.run("native:explodelines", splitwithlines, {}, name="ridges")
 
@@ -623,12 +607,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                 except Exception:
                     self.warning(self.tr("Error in processing step."))
-            
+
             except Exception:
                 self.warning(self.tr("Error in ridges construction."))
 
         # POI --------------------------------------------------------------------
-        aH, aD = self.mt.azimuth('Y', 'H'), self.mt.azimuth('Y', 'D')
+        aH, aD = self.mt.azimuth('Y', 'H'), self.mt.azimuth('Y', 'D2')
         if aD > aH:
             aH = aH + 360
         angleVue = 2 * (aH - aD)
@@ -1244,6 +1228,47 @@ class MapTool(QgsMapTool):
         for rb in self.rubbers.values():
             rb.reset()
 
+    def rebuildCuttingLines(self, sample=True):
+        if sample:
+            dx = self.finalWidth / 15.0
+        else:
+            dx = self.widget.xStep.value()
+
+        if self.widget.parallelView.isChecked():
+            leftEdge = (
+                self.geomPolyline(['A', 'D'])
+                .densifyByCount(self.widget.lineCount.value() - 2)
+                .asPolyline()
+            )
+            rightEdge = (
+                self.geomPolyline(['B', 'C'])
+                .densifyByCount(self.widget.lineCount.value() - 2)
+                .asPolyline()
+            )
+            polyline = list(zip(leftEdge, rightEdge))
+
+            self.cuttingLines = QgsGeometry.fromMultiPolylineXY(polyline).densifyByDistance(dx).asMultiPolyline()
+        else:
+            dAlpha = self.angle('D2', 'Y', 'C2') / (self.finalWidth / dx)
+
+            leftEdge = (
+                self.geomPolyline(['A2', 'D2'])
+                .densifyByCount(self.widget.lineCount.value() - 2)
+                .asPolyline()
+            )
+
+            polyline = []
+            for p in leftEdge:
+                line = []
+                for nx in range(2 + int((self.finalWidth / dx))):
+                    g = self.geomPoint(p)
+                    g.rotate(nx * dAlpha, self.pointXY('Y'))
+                    line.append(g.asPoint())
+
+                polyline.append(line)
+
+            self.cuttingLines = polyline
+
     def updateRubberGeom(self):
         if not self.points['A'].isOk():
             return
@@ -1297,8 +1322,8 @@ class MapTool(QgsMapTool):
         else:
             self.rubbers['foc'].setToGeometry(self.geomPolyline(['D2', 'Y', 'C2']))
 
-            alpha = self.angle('D', 'Y', 'H')
-            dAlpha = 2 * alpha / 12
+            alpha = self.angle('D2', 'Y', 'C2')
+            dAlpha = alpha / 12
 
             leftEdge = (
                 self.geomPolyline(['A2', 'D2'])
@@ -1320,17 +1345,18 @@ class MapTool(QgsMapTool):
                 polyline.append(line)
 
             self.finalWidth = self.geomPolyline(polyline[int(len(polyline) / 2)]).length()
+            dAlphaDetail = alpha / (self.finalWidth / self.widget.xStep.value())
 
             aPrim = self.geomPoint('A2')
             dPrim = self.geomPoint('D2')
-            dAlphaDetail = 2 * alpha / (self.finalWidth / self.widget.xStep.value())
             for _ in range(5):
                 seg = self.geomPolyline([aPrim.asPoint(), dPrim.asPoint()]).asPolyline()
                 polylineX.append(seg)
                 aPrim.rotate(dAlphaDetail, self.pointXY('Y'))
                 dPrim.rotate(dAlphaDetail, self.pointXY('Y'))
 
-        self.cuttingLines = polyline
+        self.rebuildCuttingLines(True)
+
         self.rubbers['lines'].setToGeometry(
             QgsGeometry.fromMultiPolylineXY(
                 polylineX
@@ -1371,6 +1397,7 @@ class MapTool(QgsMapTool):
             proj = self.widget.getPeakGeom(self.pointXY('peak'))
             self.rubbers['peakProj'].setToGeometry(proj)
 
+        # build projected base lines
         polyline = []
         nbLines = self.widget.lineCount.value()
         for _ in range(nbLines)[::-1]:
@@ -1380,6 +1407,7 @@ class MapTool(QgsMapTool):
 
         self.skyLines = polyline
 
+        # Echantillon
         try:
             horizonGeom, thumbnailGeom = self.widget.getThumbnailGeom()
             self.rubbers['horizon'].setToGeometry(horizonGeom)
