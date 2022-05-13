@@ -258,6 +258,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             if prof > i and p.contains(pt):
                 visi = visi - 1
 
+            #print(" p {} i {} visi {}".format(prof, i, visi))
             if visi <= -10:
                 break
 
@@ -285,7 +286,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # distance entre deux profils
         dd = self.mt.zoneDepth / (self.lineCount.value() - 1)
         # indice du profil
-        ixL = round(depth / dd)
+        ixL = round((depth - self.mt.d0) / dd)
+        #print("{} {} {} {}".format(self.mt.zoneDepth, (depth - self.mt.d0), self.lineCount.value(), ixL))
         return ixL
 
     def getProjectionPoint(self, pt):
@@ -431,7 +433,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 lineOut.append(QgsPointXY(self.projBox.xMinimum(), self.yMin-self.base.value()))
                 aPolys.append([lineOut])
         else:
-            # copy 
+            # copy
             for lineOut in [lin.copy() for lin in aLines]:
                 lineOut.append(QgsPointXY(self.projBox.xMaximum(), self.yMin-self.base.value()))
                 lineOut.append(QgsPointXY(self.projBox.xMinimum(), self.yMin-self.base.value()))
@@ -577,7 +579,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     horizons = []
 
                     for lnum, linG in enumerate(aLines):
-                        # print("# lnum {}".format(lnum))
+                        #  ("# lnum {}".format(lnum))
                         lin = QgsGeometry(linG)
                         self.progressBar.setValue(progress)
                         progress = progress + 1
@@ -831,6 +833,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                         layer.dataProvider().addFeatures(feats)
                         layer.commitChanges()
+                        layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-line.qml"))
 
                 if (
                     poiLayer.wkbType() == QgsWkbTypes.Polygon
@@ -896,6 +899,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         sourceStyles = poiLayer.styleManager().mapLayerStyles()
                         layer.styleManager().addStyle("poi", list(sourceStyles.values())[0])
                         layer.commitChanges()
+                        layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-polygon.qml"))
+
         finally:
             self.setAlert("")
             self.progressBar.setValue(0)
@@ -1228,15 +1233,19 @@ class MapTool(QgsMapTool):
             self.points[p] = Point()
 
         # rectangle vertices (handles)
-        self.zoneWidth = None
         self.zoneDepth = None
 
         # Rubbers (éléments graphiques visibles) -----------
+        # Ordre de la déclaration = ordre d'affichage
+
         self.rubbers = {}
+        for p in ('horizon',):
+            self.rubbers[p] = self.getRubber(QgsWkbTypes.LineGeometry)
+
         for p in ('thumbnail', 'box'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.PolygonGeometry)
 
-        for p in ('foc', 'lines', 'horizon'):
+        for p in ('foc', 'lines'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.LineGeometry)
 
         for p in ('peak', 'peakProj', 'B', 'H', 'L', 'Y', 'B2', 'L2', 'M', 'R'):
@@ -1248,15 +1257,13 @@ class MapTool(QgsMapTool):
         for p in ('A2', 'C2', 'D2'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry, color=Qt.darkGray, w=2)"""
 
-        # Ordre de la déclaration = ordre d'affichage
-
+        # last line (blue)
+        self.rubbers['horizon'].setStrokeColor(QColor(70, 100, 255, 200))
+        self.rubbers['horizon'].setWidth(3)
         # thumbnails skylines - profil échantillon projeté
         self.rubbers['thumbnail'].setStrokeColor(QColor(200, 120, 70, 130))
         self.rubbers['thumbnail'].setWidth(0.8)
         self.rubbers['R'].setStrokeColor(QColor(120, 70, 200, 200))
-        # last line (blue)
-        self.rubbers['horizon'].setStrokeColor(QColor(70, 100, 255, 200))
-        self.rubbers['horizon'].setWidth(2)
         # peak projection
         self.rubbers['peakProj'].setStrokeColor(QColor(255, 239, 15, 200))
         self.rubbers['peakProj'].setWidth(4)
@@ -1330,8 +1337,6 @@ class MapTool(QgsMapTool):
         self.segCD = self.geomPolyline(['C', 'D'])
         self.segAD = self.geomPolyline(['A', 'D'])
 
-        self.zoneWidth = self.distance('A', 'B')
-        self.zoneDepth = self.distance('A', 'D')
         self.d0 = self.distance('M', 'Y')
         self.horizon = self.distance('H', 'Y')
         self.widget.updateZ(self.points['Y'].pxy)
@@ -1367,7 +1372,8 @@ class MapTool(QgsMapTool):
             )
             polylineX = list(zip(frontSide[:5], backSide[:5]))
 
-            self.finalWidth = self.zoneWidth
+            self.finalWidth = self.distance('A', 'B')
+            self.zoneDepth = self.distance('A', 'D')
 
         else:
             self.rubbers['foc'].setToGeometry(self.geomPolyline(['D2', 'Y', 'C2']))
@@ -1395,6 +1401,8 @@ class MapTool(QgsMapTool):
                 polyline.append(line)
 
             self.finalWidth = self.geomPolyline(polyline[int(len(polyline) / 2)]).length()
+            self.zoneDepth = self.distance('A2', 'D2')
+
             dAlphaDetail = alpha / (self.finalWidth / self.widget.xStep.value())
 
             aPrim = self.geomPoint('A2')
