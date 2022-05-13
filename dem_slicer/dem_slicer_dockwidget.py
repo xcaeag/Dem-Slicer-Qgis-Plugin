@@ -99,6 +99,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.renderLines,
             self.renderPolygons,
             self.renderRidges,
+            self.renderCompass,
+            self.toSmooth,
             self.parallelView,
             self.poiListLabel,
             self.labelElevation,
@@ -120,6 +122,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.renderLines,
             self.renderPolygons,
             self.renderRidges,
+            self.renderCompass,
+            self.toSmooth,
             self.btnBuild,
             self.progressBar,
             self.parallelView,
@@ -404,18 +408,22 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 if newY < ymin:
                     ymin = newY
 
-            aLines.append(lineOut)
+            if sample or not self.toSmooth.isChecked():
+                aLines.append(lineOut)
+            else:
+                aLines.append(QgsGeometry.fromPolylineXY(lineOut).smooth(2, 0.25).asPolyline())
+
             self.yMin = ymin
 
         if sample:
             # pas de copy necessaire
-            for lineOut in polylineOut:
+            for lineOut in aLines:
                 lineOut.append(QgsPointXY(self.projBox.xMaximum(), self.yMin-self.base.value()))
                 lineOut.append(QgsPointXY(self.projBox.xMinimum(), self.yMin-self.base.value()))
                 aPolys.append([lineOut])
         else:
             # copy 
-            for lineOut in [lin.copy() for lin in polylineOut]:
+            for lineOut in [lin.copy() for lin in aLines]:
                 lineOut.append(QgsPointXY(self.projBox.xMaximum(), self.yMin-self.base.value()))
                 lineOut.append(QgsPointXY(self.projBox.xMinimum(), self.yMin-self.base.value()))
                 aPolys.append([lineOut])
