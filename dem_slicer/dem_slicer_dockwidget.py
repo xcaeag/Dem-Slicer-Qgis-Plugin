@@ -485,22 +485,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if self.parallelView.isChecked():
             polylineIn = geom.densifyByDistance(dx).asMultiPolyline()
         else:
-            aH = self.mt.azimuth('Y', 'H')
-            aD = self.mt.azimuth('Y', 'D')
-            if aD > aH:
-                aH = aH + 360
-
-            alpha = aH - aD
-            dAlpha = 2 * alpha / (self.mt.finalWidth / dx)
-            aPrim = self.mt.geomPoint('H')
-            aPrim.rotate(-alpha, self.mt.pointXY('Y'))
-            aPrim = aPrim.asPoint()
-            dPrim = self.mt.geomPoint('M')
-            dPrim.rotate(-alpha, self.mt.pointXY('Y'))
-            dPrim = dPrim.asPoint()
+            alpha = self.mt.angle('D2', 'Y', 'C2')
+            dAlpha = alpha / (self.mt.finalWidth / dx)
 
             leftEdge = (
-                QgsGeometry.fromPolylineXY([aPrim, dPrim])
+                self.mt.geomPolyline(['A2', 'D2'])
                 .densifyByCount(self.lineCount.value() - 2)
                 .asPolyline()
             )
@@ -1479,7 +1468,7 @@ class MapTool(QgsMapTool):
     def getSampleLines(self):
         return (
             [self.cuttingLines[0], self.cuttingLines[1]]
-            + self.cuttingLines[2:-1][:: max(1, 1 + round((len(self.cuttingLines) - 3) / 9))]
+            + self.cuttingLines[2:-1][:: max(1, 1 + round((len(self.cuttingLines) - 3) / 15))]
             + [self.cuttingLines[-1]]
         )
 
@@ -1489,7 +1478,7 @@ class MapTool(QgsMapTool):
     def getSampleSkylines(self):
         return (
             [self.skyLines[0], self.skyLines[1]]
-            + self.skyLines[2:-1][:: max(1, 1 + round((len(self.skyLines) - 3) / 9))]
+            + self.skyLines[2:-1][:: max(1, 1 + round((len(self.skyLines) - 3) / 15))]
             + [self.skyLines[-1]]
         )
 
