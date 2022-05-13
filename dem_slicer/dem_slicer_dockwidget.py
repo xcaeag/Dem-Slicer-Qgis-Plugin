@@ -320,10 +320,13 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def getThumbnailGeom(self) -> QgsGeometry:
         """
-            Return horizon line and others polygons
+            Return first line, horizon line and all polygons
         """
         _, aPolys = self.getLinesAndPolys(sample=True)
-        return QgsGeometry.fromPolygonXY(aPolys[0]), QgsGeometry.fromMultiPolygonXY(aPolys)
+        return (QgsGeometry.fromPolygonXY(aPolys[-1]),
+            QgsGeometry.fromPolygonXY(aPolys[0]),
+            QgsGeometry.fromMultiPolygonXY(aPolys[1:-1])
+        )
 
     def getPeakGeom(self, ptPeak):
         ptXY = self.getProjectionPoint(ptPeak)
@@ -1245,6 +1248,9 @@ class MapTool(QgsMapTool):
         for p in ('thumbnail', 'box'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.PolygonGeometry)
 
+        for p in ('first',):
+            self.rubbers[p] = self.getRubber(QgsWkbTypes.LineGeometry)
+
         for p in ('foc', 'lines'):
             self.rubbers[p] = self.getRubber(QgsWkbTypes.LineGeometry)
 
@@ -1260,6 +1266,8 @@ class MapTool(QgsMapTool):
         # last line (blue)
         self.rubbers['horizon'].setStrokeColor(QColor(70, 100, 255, 200))
         self.rubbers['horizon'].setWidth(3)
+        self.rubbers['first'].setStrokeColor(QColor(230, 170, 70, 200))
+        self.rubbers['first'].setWidth(2)
         # thumbnails skylines - profil échantillon projeté
         self.rubbers['thumbnail'].setStrokeColor(QColor(200, 120, 70, 130))
         self.rubbers['thumbnail'].setWidth(0.8)
@@ -1467,8 +1475,9 @@ class MapTool(QgsMapTool):
 
         # Echantillon
         try:
-            horizonGeom, thumbnailGeom = self.widget.getThumbnailGeom()
-            self.rubbers['horizon'].setToGeometry(horizonGeom)
+            first, horiz, thumbnailGeom = self.widget.getThumbnailGeom()
+            self.rubbers['first'].setToGeometry(first)
+            self.rubbers['horizon'].setToGeometry(horiz)
             self.rubbers['thumbnail'].setToGeometry(thumbnailGeom)
         except Exception as e:
             self.widget.log("Err ds {} ligne {} ".format(
