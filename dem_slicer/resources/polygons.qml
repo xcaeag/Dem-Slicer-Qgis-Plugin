@@ -1,28 +1,28 @@
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
-<qgis version="3.22.5-Białowieża" styleCategories="Symbology">
-  <renderer-v2 forceraster="0" enableorderby="0" type="singleSymbol" symbollevels="0" referencescale="-1">
+<qgis version="3.24.1-Tisler" styleCategories="Symbology">
+  <renderer-v2 referencescale="-1" type="singleSymbol" forceraster="0" enableorderby="0" symbollevels="0">
     <symbols>
-      <symbol clip_to_extent="1" name="0" force_rhr="0" alpha="1" type="fill">
+      <symbol clip_to_extent="1" force_rhr="0" type="fill" name="0" alpha="1">
         <data_defined_properties>
           <Option type="Map">
-            <Option value="" name="name" type="QString"/>
+            <Option value="" type="QString" name="name"/>
             <Option name="properties"/>
-            <Option value="collection" name="type" type="QString"/>
+            <Option value="collection" type="QString" name="type"/>
           </Option>
         </data_defined_properties>
-        <layer locked="0" enabled="1" class="SimpleFill" pass="0">
+        <layer class="SimpleFill" enabled="1" pass="0" locked="0">
           <Option type="Map">
-            <Option value="3x:0,0,0,0,0,0" name="border_width_map_unit_scale" type="QString"/>
-            <Option value="235,232,189,255" name="color" type="QString"/>
-            <Option value="round" name="joinstyle" type="QString"/>
-            <Option value="0,0" name="offset" type="QString"/>
-            <Option value="3x:0,0,0,0,0,0" name="offset_map_unit_scale" type="QString"/>
-            <Option value="MM" name="offset_unit" type="QString"/>
-            <Option value="34,34,64,153" name="outline_color" type="QString"/>
-            <Option value="solid" name="outline_style" type="QString"/>
-            <Option value="0.15" name="outline_width" type="QString"/>
-            <Option value="MM" name="outline_width_unit" type="QString"/>
-            <Option value="solid" name="style" type="QString"/>
+            <Option value="3x:0,0,0,0,0,0" type="QString" name="border_width_map_unit_scale"/>
+            <Option value="235,232,189,255" type="QString" name="color"/>
+            <Option value="round" type="QString" name="joinstyle"/>
+            <Option value="0,0" type="QString" name="offset"/>
+            <Option value="3x:0,0,0,0,0,0" type="QString" name="offset_map_unit_scale"/>
+            <Option value="MM" type="QString" name="offset_unit"/>
+            <Option value="34,34,64,153" type="QString" name="outline_color"/>
+            <Option value="solid" type="QString" name="outline_style"/>
+            <Option value="0.15" type="QString" name="outline_width"/>
+            <Option value="MM" type="QString" name="outline_width_unit"/>
+            <Option value="solid" type="QString" name="style"/>
           </Option>
           <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
           <prop v="235,232,189,255" k="color"/>
@@ -37,15 +37,15 @@
           <prop v="solid" k="style"/>
           <data_defined_properties>
             <Option type="Map">
-              <Option value="" name="name" type="QString"/>
-              <Option name="properties" type="Map">
-                <Option name="fillColor" type="Map">
-                  <Option value="true" name="active" type="bool"/>
-                  <Option value="set_color_part(ramp_color(create_ramp(map(0,'235,232,189',1,'82,104,152')),  &quot;demslicer_num&quot; / maximum( &quot;demslicer_num&quot; )), 'alpha', 80)" name="expression" type="QString"/>
-                  <Option value="3" name="type" type="int"/>
+              <Option value="" type="QString" name="name"/>
+              <Option type="Map" name="properties">
+                <Option type="Map" name="fillColor">
+                  <Option value="true" type="bool" name="active"/>
+                  <Option value="set_color_part(ramp_color(create_ramp(map(0,'235,232,189',0.6,'82,104,152', 1, '230,150,10')),  &quot;demslicer_num&quot; / maximum( &quot;demslicer_num&quot; )), 'alpha', 80)" type="QString" name="expression"/>
+                  <Option value="3" type="int" name="type"/>
                 </Option>
               </Option>
-              <Option value="collection" name="type" type="QString"/>
+              <Option value="collection" type="QString" name="type"/>
             </Option>
           </data_defined_properties>
         </layer>
