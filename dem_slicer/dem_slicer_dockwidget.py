@@ -592,7 +592,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             compass.commitChanges()
 
             QgsProject.instance().addMapLayer(compass)
-            compass.loadNamedStyle(str(DIR_PLUGIN_ROOT / "compass.qml"))
+            compass.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/compass.qml"))
 
         # Line Slices --------------------------------------------------------------------
         if self.renderLines.isChecked():
@@ -602,7 +602,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 "memory",
             )
             self.buildLayer(layer, aLines, progress)
-            layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "lines.qml"))
+            layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/lines.qml"))
 
         # Poly Slices --------------------------------------------------------------------
         if self.renderPolygons.isChecked():
@@ -613,9 +613,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             )
             self.buildLayer(pLayer, aPolys, progress)
             if self.renderRidges.isChecked():
-                pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "polygons_ridges.qml"))
+                pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/polygons_ridges.qml"))
             else:
-                pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "polygons.qml"))
+                pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/polygons.qml"))
 
         # RIDGES --------------------------------------------------------------------
         if self.renderRidges.isChecked():
@@ -687,7 +687,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 ridges.updateFeature(f)
 
             ridges.commitChanges()
-            ridges.loadNamedStyle(str(DIR_PLUGIN_ROOT / "ridges.qml"))
+            ridges.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ridges.qml"))
 
             QgsProject.instance().addMapLayer(ridges)
 
@@ -796,7 +796,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     layer.updateFields()
 
                     layer.dataProvider().addFeatures(feats)
-                    layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "poi.qml"))
+                    layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/poi.qml"))
                     layer.commitChanges()
 
             # Projeter des lignes ou polygones
