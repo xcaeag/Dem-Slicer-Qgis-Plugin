@@ -303,6 +303,19 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="renderSource">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;render source points with z attribute (be careful, it can be bulky)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>render source points</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -447,10 +460,11 @@
   <tabstop>elevation</tabstop>
   <tabstop>base</tabstop>
   <tabstop>renderLines</tabstop>
-  <tabstop>toSmooth</tabstop>
   <tabstop>renderPolygons</tabstop>
   <tabstop>renderRidges</tabstop>
   <tabstop>renderCompass</tabstop>
+  <tabstop>toSmooth</tabstop>
+  <tabstop>renderSource</tabstop>
   <tabstop>btnSave</tabstop>
   <tabstop>btnLoad</tabstop>
   <tabstop>btnBuild</tabstop>

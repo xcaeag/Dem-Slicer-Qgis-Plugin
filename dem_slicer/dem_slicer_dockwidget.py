@@ -44,7 +44,7 @@ from qgis.core import (
     Qgis,
     QgsWkbTypes,
     QgsGeometry,
-    QgsPoint, QgsPointXY,
+    QgsPoint, QgsPointXY, QgsLineString,
     QgsMessageLog,
     QgsProject,
     QgsMapLayer,
@@ -105,6 +105,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.renderRidges,
             self.renderCompass,
             self.toSmooth,
+            self.renderSource,
             self.parallelView,
             self.poiListLabel,
             self.labelElevation,
@@ -128,6 +129,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.renderRidges,
             self.renderCompass,
             self.toSmooth,
+            self.renderSource,
             self.btnBuild,
             self.progressBar,
             self.parallelView,
@@ -258,7 +260,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             if prof > i and p.contains(pt):
                 visi = visi - 1
 
-            #print(" p {} i {} visi {}".format(prof, i, visi))
+            # print(" p {} i {} visi {}".format(prof, i, visi))
             if visi <= -10:
                 break
 
@@ -287,7 +289,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         dd = self.mt.zoneDepth / (self.lineCount.value() - 1)
         # indice du profil
         ixL = round((depth - self.mt.d0) / dd)
-        #print("{} {} {} {}".format(self.mt.zoneDepth, (depth - self.mt.d0), self.lineCount.value(), ixL))
+        # print("{} {} {} {}".format(self.mt.zoneDepth, (depth - self.mt.d0), self.lineCount.value(), ixL))
         return ixL
 
     def getProjectionPoint(self, pt):
@@ -322,8 +324,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         """
             Return first line, horizon line and all polygons
         """
-        _, aPolys = self.getLinesAndPolys(sample=True)
-        return (QgsGeometry.fromPolygonXY(aPolys[-1]),
+        _, _, aPolys = self.getLinesAndPolys(sample=True)
+        return (
+            QgsGeometry.fromPolygonXY(aPolys[-1]),
             QgsGeometry.fromPolygonXY(aPolys[0]),
             QgsGeometry.fromMultiPolygonXY(aPolys[1:-1])
         )
@@ -372,10 +375,22 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         return geom.boundingBox(), geom.densifyByDistance(dx).asMultiPolyline()
 
     def getLinesAndPolys(self, sample=False):
+        vSource = None
         if sample:
             dx = self.mt.finalWidth / 15.0
         else:
             dx = self.xStep.value()
+
+            if self.renderSource.isChecked():
+                vSource = QgsVectorLayer(
+                    "Point?crs={}".format(QgsProject.instance().crs().authid()),
+                    "Source",
+                    "memory",
+                )
+                vSource.startEditing()
+                vSource.dataProvider().addAttributes([QgsField("demslicer_id", QVariant.Int), QgsField("demslicer_z", QVariant.Int)])
+                vSource.updateFields()
+                feats = []
 
         # source
         polylineIn = self.getSourcePolylines(dx, sample)
@@ -389,7 +404,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         zf = self.zFactor.value()
 
         # search for Z values
-        #print("finalw:{} dx:{} - {} polylineIn, {} polylineOut".format(self.mt.finalWidth, dx, len(polylineIn), len(polylineOut)))
+        # print("finalw:{} dx:{} - {} polylineIn, {} polylineOut".format(self.mt.finalWidth, dx, len(polylineIn), len(polylineOut)))
+        id = 0
         for lineIn, lineOut in zip(polylineIn, polylineOut):
             ds, zs = map(
                 list,
@@ -427,6 +443,18 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             else:
                 aLines.append(QgsGeometry.fromPolylineXY(lineOut).smooth(2, 0.25).asPolyline())
 
+            if not sample and self.renderSource.isChecked():
+                for z, pt in zip(zs, lineIn):
+                    vtx = QgsPoint(pt.x(), pt.y())
+                    newG = QgsGeometry(vtx)
+                    newF = QgsFeature()
+                    newF.setGeometry(newG)
+                    newF.setFields(vSource.fields())
+                    newF.setAttribute("demslicer_id", id)
+                    newF.setAttribute("demslicer_z", z)
+                    feats.append(newF)
+                id = id + 1
+
             self.yMin = ymin
 
         if sample:
@@ -442,7 +470,20 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 lineOut.append(QgsPointXY(self.projBox.xMinimum(), self.yMin-self.base.value()))
                 aPolys.append([lineOut])
 
-        return aLines, aPolys
+            if self.renderSource.isChecked():
+                # add observer to source layer
+                newG = QgsGeometry.fromPointXY(self.mt.points['Y'].pxy)
+                newF = QgsFeature()
+                newF.setGeometry(newG)
+                newF.setFields(vSource.fields())
+                newF.setAttribute("demslicer_id", -1)
+                newF.setAttribute("demslicer_z", self.getElevation(self.xMap2Raster.transform(self.mt.points['Y'].x(), self.mt.points['Y'].y())))
+                feats.append(newF)
+
+                vSource.dataProvider().addFeatures(feats)
+                vSource.commitChanges()
+
+        return vSource, aLines, aPolys
 
     def buildSlices(self):
 
@@ -488,7 +529,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.mt.rebuildCuttingLines(False)
 
             # initial bbox ... lines
-            aLines, aPolys = self.getLinesAndPolys(sample=False)
+            vSource, aLines, aPolys = self.getLinesAndPolys(sample=False)
             aLines = [QgsGeometry.fromPolylineXY(line) for line in aLines]
             aPolys = [QgsGeometry.fromPolygonXY(poly) for poly in aPolys]
 
@@ -534,6 +575,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                 QgsProject.instance().addMapLayer(compass)
                 compass.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/compass.qml"))
+
+            # Source lines -------------------------------------------------------------------
+            if self.renderSource.isChecked():
+                QgsProject.instance().addMapLayer(vSource)
+                vSource.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/source-points.qml"))
 
             # Line Slices --------------------------------------------------------------------
             if self.renderLines.isChecked():
@@ -647,7 +693,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         ridges.commitChanges()
 
                         # collect (réduire le nb d'entités)
-                        ridges = tools.run("native:collect", ridges, {'FIELD':['demslicer_prof', 'demslicer_gaz']}, name="ridges")
+                        ridges = tools.run(
+                            "native:collect", ridges, {'FIELD': ['demslicer_prof', 'demslicer_gaz']}, name="ridges"
+                        )
                         self.progressBar.setValue(progress)
                         progress = progress + 10
 
