@@ -342,7 +342,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             polyline[i].setX(ptXY.x())
             polyline[i].setY(ptXY.y())
 
-    def buildLayer(self, layer, aLines, progress):
+    def buildLayer(self, layer, aLines):
         layer.startEditing()
         layer.dataProvider().addAttributes(
             [QgsField("demslicer_num", QVariant.Int)]
@@ -350,8 +350,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         layer.updateFields()
         feats = []
         for fid, lin in enumerate(aLines):
-            self.progressBar.setValue(progress)
-            progress = progress + 1
+            self.progress(1, '')
             feature = QgsFeature(fid)
             feature.setAttributes([str(fid)])
             feature.setGeometry(lin)
@@ -486,6 +485,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         return vSource, aLines, aPolys
 
+    def progress(self, n, s):
+        self.progressBar.setValue(self.progressBar.value()+n)
+        # self.log("progress {} : {}".format(s, self.progressBar.value()))
+
     def buildSlices(self):
 
         def projLineString(feat, polyline):
@@ -535,13 +538,37 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             aLines = [QgsGeometry.fromPolylineXY(line) for line in aLines]
             aPolys = [QgsGeometry.fromPolygonXY(poly) for poly in aPolys]
 
-            progress = 0
+            # prepare POIs
+            poiId = self.poiList.itemData(self.poiList.currentIndex())
+            poiLayer = None
+            poiFeatures = None
+            nPoi = 0
+            if poiId != 0:
+                poiLayer = QgsProject.instance().mapLayer(poiId)
+                mapcrs = self.canvas.mapSettings().destinationCrs()
+                xMap2Poi = QgsCoordinateTransform(
+                    mapcrs, poiLayer.crs(), QgsProject.instance()
+                )
+                # filter points (convex envelope)
+                zon = QgsGeometry.fromMultiPolylineXY(self.mt.getLines())
+                rq = QgsFeatureRequest().setFilterRect(
+                    xMap2Poi.transform(zon.boundingBox())
+                )
+                rq.setFlags(QgsFeatureRequest.ExactIntersect)
+                poiFeatures = poiLayer.getFeatures(rq)
+                nPoi = (sum(1 for _ in poiFeatures) if poiFeatures is not None else 0)
+                poiFeatures = poiLayer.getFeatures(rq)
+
             self.progressBar.setMaximum(
-                len(aLines) if self.renderLines.isChecked() else 0  # lines
-                + len(aPolys) if self.renderPolygons.isChecked() else 0  # polygons
-                + 7*10+len(aPolys) if self.renderRidges.isChecked() else 0  # ridges
-                # todo : poi
+                10  # init
+                + (len(aLines) if self.renderLines.isChecked() else 0)  # lines
+                + (len(aPolys) if self.renderPolygons.isChecked() else 0)  # polygons
+                + (7*10 + 2*len(aLines) if self.renderRidges.isChecked() else 0)  # ridges
+                + nPoi
             )
+            self.log("progress max : {}".format(self.progressBar.maximum()))
+
+            self.progress(10, 'init')
 
             # Compass ------------------------------------------------------------------------
             if not self.parallelView.isChecked() and self.renderCompass.isChecked():
@@ -591,7 +618,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     "Lines",
                     "memory",
                 )
-                self.buildLayer(layer, aLines, progress)
+                self.buildLayer(layer, aLines)
                 layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/lines.qml"))
 
             # Poly Slices --------------------------------------------------------------------
@@ -602,7 +629,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     "Polygons",
                     "memory",
                 )
-                self.buildLayer(pLayer, aPolys, progress)
+                self.buildLayer(pLayer, aPolys)
                 if self.renderRidges.isChecked():
                     pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/polygons_ridges.qml"))
                 else:
@@ -632,8 +659,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     for lnum, linG in enumerate(aLines):
                         #  ("# lnum {}".format(lnum))
                         lin = QgsGeometry(linG)
-                        self.progressBar.setValue(progress)
-                        progress = progress + 1
+                        self.progress(2, 'ridge')
 
                         polyMax = None
                         for _, poly in enumerate(aPolys[lnum+1:]):
@@ -663,12 +689,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     try:
                         # prolonger les lignes
                         extendlines = tools.run("native:extendlines", hLayer, params={'START_DISTANCE': 1, 'END_DISTANCE': 1})
-                        self.progressBar.setValue(progress)
-                        progress = progress + 10
+                        self.progress(10, 'ridges')
                         # intersection -> points
                         lineintersections = tools.run("native:lineintersections", hLayer, params={'INTERSECT': extendlines})
-                        self.progressBar.setValue(progress)
-                        progress = progress + 10
+                        self.progress(10, 'ridges')
                         # filtrer
                         filtered = tools.run("qgis:selectbyexpression", lineintersections, {'EXPRESSION': ' "demslicer_prof" <  "demslicer_prof_2" ', 'METHOD': 0})
                         filtered = tools.run("native:saveselectedfeatures", filtered, {})
@@ -679,24 +703,20 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 'EXPRESSION': 'make_line( make_point(x($geometry), y($geometry)-1), make_point(x($geometry), y($geometry)+1))'
                             }
                         )
-                        self.progressBar.setValue(progress)
-                        progress = progress + 10
+                        self.progress(10, 'ridges')
                         # couper
                         splitwithlines = tools.run("native:splitwithlines", hLayer, params={'LINES': verticals})
-                        self.progressBar.setValue(progress)
-                        progress = progress + 10
+                        self.progress(10, 'ridges')
                         # exploser
                         ridges = tools.run("native:explodelines", splitwithlines, {}, name="ridges")
-                        self.progressBar.setValue(progress)
-                        progress = progress + 10
+                        self.progress(10, 'ridges')
 
                         ridges.startEditing()
                         for f in ridges.getFeatures():
                             gz = self.getGaz(f.geometry().centroid(), aPolys, f["demslicer_prof"])
                             f["demslicer_gaz"] = gz
                             ridges.updateFeature(f)
-                        self.progressBar.setValue(progress)
-                        progress = progress + 10
+                        self.progress(10, 'ridges')
 
                         ridges.commitChanges()
 
@@ -708,8 +728,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         ridges = tools.run(
                             "native:collect", ridges, {'FIELD': ['demslicer_prof', 'demslicer_gaz']}, name="ridges"
                         )
-                        self.progressBar.setValue(progress)
-                        progress = progress + 10
+                        self.progress(10, 'ridges')
 
                         ridges.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ridges.qml"))
 
@@ -722,32 +741,18 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     self.warning(self.tr("Error in ridges construction."))
 
             # POI --------------------------------------------------------------------
-            aH, aD = self.mt.azimuth('Y', 'H'), self.mt.azimuth('Y', 'D2')
-            if aD > aH:
-                aH = aH + 360
-            angleVue = 2 * (aH - aD)
-
-            poiId = self.poiList.itemData(self.poiList.currentIndex())
-            poiLayer = None
-            if poiId != 0:
+            if poiLayer is not None:
                 self.setAlert(self.tr("project POIs"))
 
-                poiLayer = QgsProject.instance().mapLayer(poiId)
+                aH, aD = self.mt.azimuth('Y', 'H'), self.mt.azimuth('Y', 'D2')
+                if aD > aH:
+                    aH = aH + 360
+                angleVue = 2 * (aH - aD)
+
                 mapcrs = self.canvas.mapSettings().destinationCrs()
-                xMap2Poi = QgsCoordinateTransform(
-                    mapcrs, poiLayer.crs(), QgsProject.instance()
-                )
                 xPoi2Map = QgsCoordinateTransform(
                     poiLayer.crs(), mapcrs, QgsProject.instance()
                 )
-
-                # filter points (convex envelope)
-                zon = QgsGeometry.fromMultiPolylineXY(self.mt.getLines())
-                rq = QgsFeatureRequest().setFilterRect(
-                    xMap2Poi.transform(zon.boundingBox())
-                )
-                rq.setFlags(QgsFeatureRequest.ExactIntersect)
-                features = poiLayer.getFeatures(rq)
 
                 hull = zon.convexHull()
                 if (
@@ -756,7 +761,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 ):
                     feats = []
                     fid = 1
-                    for feat in features:
+                    for feat in poiFeatures:
+                        self.progress(1, 'poi')
+
                         poiPointXY = xPoi2Map.transform(
                             feat.geometry().asPoint().x(), feat.geometry().asPoint().y()
                         )
@@ -838,7 +845,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 ):
                     feats = []
                     fid = 1
-                    for feat in features:
+                    for feat in poiFeatures:
+                        self.progress(1, 'poi')
+
                         geom = QgsGeometry(feat.geometry())
                         geom.transform(xPoi2Map)
                         geom = geom.intersection(hull)
@@ -904,7 +913,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 ):
                     feats = []
                     fid = 1
-                    for feat in features:
+                    for feat in poiFeatures:
+                        self.progress(1, 'poi')
+
                         geom = QgsGeometry(feat.geometry())
                         geom.transform(xPoi2Map)
                         geom = geom.intersection(hull)
