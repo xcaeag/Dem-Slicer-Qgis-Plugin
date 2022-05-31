@@ -1364,7 +1364,7 @@ class MapTool(QgsMapTool):
         self.rubbers['first'].setWidth(2)
         # thumbnails skylines - profil échantillon projeté
         self.rubbers['thumbnail'].setStrokeColor(QColor(200, 120, 70, 130))
-        self.rubbers['thumbnail'].setWidth(0.8)
+        self.rubbers['thumbnail'].setWidth(1)
         self.rubbers['R'].setStrokeColor(QColor(120, 70, 200, 200))
         # peak projection
         self.rubbers['peakProj'].setStrokeColor(QColor(255, 239, 15, 200))
@@ -1377,7 +1377,7 @@ class MapTool(QgsMapTool):
         self.rubbers['foc'].setWidth(1)
         # cutting lines
         self.rubbers['lines'].setStrokeColor(QColor(40, 180, 30, 200))
-        self.rubbers['lines'].setWidth(1.5)
+        self.rubbers['lines'].setWidth(2)
         # ROTATE node (eye)
         self.rubbers['Y'].setStrokeColor(Qt.blue)
         # PEAK

@@ -2,7 +2,7 @@ name: Release 🚀
 
 env:
   PROJECT_FOLDER: "dem_slicer"
-  PYTHON_VERSION: 3.8
+  PYTHON_VERSION: 3.10
 
 on:
   push:
