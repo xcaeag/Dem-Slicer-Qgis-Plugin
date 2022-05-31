@@ -129,11 +129,11 @@ The attributes carried by the geometries can be used to adjust styles. For examp
 
 ![ex1](dem_slicer/help/all.png)
 
-Il s'agit d'un outil simple de découpe (en tranches !) de MNT, pour dessiner de jolies cartes postales, à destination des amoureux de reliefs.
+Il s'agit d'un outil simple de découpe (en tranches !) de Modèle numérique de terrain (MNT), pour dessiner de jolies cartes postales, à destination des amoureux de reliefs.
 
 Le principe est de construire une série de profils d'altitudes (sous forme de lignes ou de polygones), de les juxtaposer pour donner l'illusion d'une vue 3D. Ici, pas de calcul de l'indice de réfraction atmosphérique, pas de prise en compte de la courbure terrestre... juste un peu de géométrie, et les styles font le reste. Les couches résultantes sont positionnées où bon vous semble, le système de coordonnées utilisé est celui de la carte.
 
-Les décalages (variés selon les paramètres retenus) en hauteur de chaque coupe simulent des vues parallèles ou 'perspective', une vision 'radiale' tente de se rapprocher de la vision que peut avoir un observateur.
+La vue 'perspective' par défaut propose un rendu plus proche de la réalité (par rapport aux versions précédentes). 
 
 Un calcul de 'ligne de crête' rehausse les reliefs.
 
