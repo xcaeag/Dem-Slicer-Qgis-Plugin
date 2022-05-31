@@ -700,6 +700,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                         ridges.commitChanges()
 
+                        # filtrer
+                        ridges = tools.run("qgis:selectbyexpression", ridges, {'EXPRESSION': ' "demslicer_prof" > 1', 'METHOD': 0})
+                        ridges = tools.run("native:saveselectedfeatures", ridges, {})
+
                         # collect (réduire le nb d'entités)
                         ridges = tools.run(
                             "native:collect", ridges, {'FIELD': ['demslicer_prof', 'demslicer_gaz']}, name="ridges"
