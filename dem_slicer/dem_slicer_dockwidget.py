@@ -563,7 +563,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 10  # init
                 + (len(aLines) if self.renderLines.isChecked() else 0)  # lines
                 + (len(aPolys) if self.renderPolygons.isChecked() else 0)  # polygons
-                + (7*10 + 2*len(aLines) if self.renderRidges.isChecked() else 0)  # ridges
+                + (9*10 + 2*len(aLines) if self.renderRidges.isChecked() else 0)  # ridges
                 + nPoi
             )
             self.log("progress max : {}".format(self.progressBar.maximum()))
@@ -688,46 +688,63 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     # processing pour poursuivre...
                     try:
                         # prolonger les lignes
+                        self.setAlert(self.tr("build ridges 2/10"))
                         extendlines = tools.run("native:extendlines", hLayer, params={'START_DISTANCE': 1, 'END_DISTANCE': 1})
+                        tools.run("native:createspatialindex", extendlines, {})
                         self.progress(10, 'ridges')
                         # intersection -> points
+                        self.setAlert(self.tr("build ridges 3/10"))
                         lineintersections = tools.run("native:lineintersections", hLayer, params={'INTERSECT': extendlines})
+                        tools.run("native:createspatialindex", lineintersections, {})
                         self.progress(10, 'ridges')
                         # filtrer
+                        self.setAlert(self.tr("build ridges 4/10"))
                         filtered = tools.run("qgis:selectbyexpression", lineintersections, {'EXPRESSION': ' "demslicer_prof" <  "demslicer_prof_2" ', 'METHOD': 0})
                         filtered = tools.run("native:saveselectedfeatures", filtered, {})
+                        tools.run("native:createspatialindex", filtered, {})
+                        self.progress(10, 'ridges')
                         # générer des verticales pour découpage (expression) -> segments
+                        self.setAlert(self.tr("build ridges 5/10"))
                         verticals = tools.run(
                             "native:geometrybyexpression", filtered,
                             params={
                                 'EXPRESSION': 'make_line( make_point(x($geometry), y($geometry)-1), make_point(x($geometry), y($geometry)+1))'
                             }
                         )
+                        tools.run("native:createspatialindex", verticals, {})
                         self.progress(10, 'ridges')
                         # couper
+                        self.setAlert(self.tr("build ridges 6/10"))
                         splitwithlines = tools.run("native:splitwithlines", hLayer, params={'LINES': verticals})
+                        tools.run("native:createspatialindex", splitwithlines, {})
                         self.progress(10, 'ridges')
                         # exploser
+                        self.setAlert(self.tr("build ridges 7/10"))
                         ridges = tools.run("native:explodelines", splitwithlines, {}, name="ridges")
+                        tools.run("native:createspatialindex", ridges, {})
                         self.progress(10, 'ridges')
 
+                        self.setAlert(self.tr("build ridges 8/10"))
                         ridges.startEditing()
                         for f in ridges.getFeatures():
                             gz = self.getGaz(f.geometry().centroid(), aPolys, f["demslicer_prof"])
                             f["demslicer_gaz"] = gz
                             ridges.updateFeature(f)
                         self.progress(10, 'ridges')
-
                         ridges.commitChanges()
 
                         # filtrer
+                        self.setAlert(self.tr("build ridges 9/10"))
                         ridges = tools.run("qgis:selectbyexpression", ridges, {'EXPRESSION': ' "demslicer_prof" > 1', 'METHOD': 0})
                         ridges = tools.run("native:saveselectedfeatures", ridges, {})
+                        self.progress(10, 'ridges')
 
                         # collect (réduire le nb d'entités)
+                        self.setAlert(self.tr("build ridges 10/10"))
                         ridges = tools.run(
                             "native:collect", ridges, {'FIELD': ['demslicer_prof', 'demslicer_gaz']}, name="ridges"
                         )
+                        tools.run("native:createspatialindex", ridges, {})
                         self.progress(10, 'ridges')
 
                         ridges.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ridges.qml"))
