@@ -41,10 +41,11 @@ from qgis.PyQt.QtCore import (
 )
 from qgis.PyQt.QtGui import QColor
 from qgis.core import (
+    QgsApplication,
     Qgis,
     QgsWkbTypes,
     QgsGeometry,
-    QgsPoint, QgsPointXY, QgsLineString,
+    QgsPoint, QgsPointXY,
     QgsMessageLog,
     QgsProject,
     QgsMapLayer,
@@ -526,6 +527,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 return None
 
         try:
+            QgsApplication.setOverrideCursor(Qt.WaitCursor)
             self.mt.rebuildCuttingLines(False)
 
             # initial bbox ... lines
@@ -668,13 +670,19 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         self.progressBar.setValue(progress)
                         progress = progress + 10
                         # filtrer
-                        # todo
+                        filtered = tools.run("qgis:selectbyexpression", lineintersections, {'EXPRESSION': ' "demslicer_prof" <  "demslicer_prof_2" ', 'METHOD': 0})
+                        filtered = tools.run("native:saveselectedfeatures", filtered, {})
                         # générer des verticales pour découpage (expression) -> segments
-                        geometrybyexpression = tools.run("native:geometrybyexpression", lineintersections, params={'EXPRESSION': 'make_line( make_point(x($geometry), y($geometry)-1), make_point(x($geometry), y($geometry)+1))'})
+                        verticals = tools.run(
+                            "native:geometrybyexpression", filtered,
+                            params={
+                                'EXPRESSION': 'make_line( make_point(x($geometry), y($geometry)-1), make_point(x($geometry), y($geometry)+1))'
+                            }
+                        )
                         self.progressBar.setValue(progress)
                         progress = progress + 10
                         # couper
-                        splitwithlines = tools.run("native:splitwithlines", hLayer, params={'LINES': geometrybyexpression})
+                        splitwithlines = tools.run("native:splitwithlines", hLayer, params={'LINES': verticals})
                         self.progressBar.setValue(progress)
                         progress = progress + 10
                         # exploser
@@ -704,7 +712,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         QgsProject.instance().addMapLayer(ridges)
 
                     except Exception:
-                        self.warning(self.tr("Error in processing step."))
+                        self.warning(self.tr("Error in processing step (is processing tools actived ?)"))
 
                 except Exception:
                     self.warning(self.tr("Error in ridges construction."))
@@ -955,6 +963,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         finally:
             self.setAlert("")
             self.progressBar.setValue(0)
+            QgsApplication.restoreOverrideCursor()
 
     def build(self):
         """
@@ -976,18 +985,23 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def on_lineCount_valueChanged(self, v):
         self.mt.updateRubberGeom()
+        self.lineCount.setSingleStep(min(max(int(int(v)/10), 1), 10))
 
     def on_zShift_valueChanged(self, v):
         self.mt.updateRubberGeom()
+        self.zShift.setSingleStep(min(max(int(int(v)/10), 1), 100))
 
     def on_xStep_valueChanged(self, v):
         self.mt.updateRubberGeom()
+        self.xStep.setSingleStep(min(max(int(int(v)/10), 1), 100))
 
     def on_base_valueChanged(self, v):
         self.mt.updateRubberGeom()
+        self.base.setSingleStep(min(max(int(int(v)/10), 1), 100))
 
     def on_elevation_valueChanged(self, v):
         self.mt.updateRubberGeom()
+        self.elevation.setSingleStep(min(max(int(int(v)/10), 10), 100))
 
     def on_zFactor_valueChanged(self, v):
         self.mt.updateRubberGeom()
