@@ -19,6 +19,10 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
+
+TODO : compass : [0-360]
+TODO : fix lines projection 
+TODO : projection optimization
 """
 
 import os
@@ -310,14 +314,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if self.parallelView.isChecked():
             newX = self.mt.x('R') + self.mt.segAD.distance(QgsGeometry.fromPointXY(pt))
         else:
-            aLeft = self.mt.azimuth('Y', 'D2')
-            aRight = self.mt.azimuth('Y', 'C2')
-            if aRight < aLeft:
-                aRight = aRight + 360
             aPeak = self.mt.pointXY('Y').azimuth(pt)
-            if aPeak < aLeft:
+            if aPeak < self.mt.azimuthLeft:
                 aPeak = aPeak + 360
-            newX = self.mt.x('R') + ((aPeak-aLeft)/(aRight-aLeft))*self.mt.finalWidth
+            newX = self.mt.x('R') + ((aPeak-self.mt.azimuthLeft)/(self.mt.azimuthRight-self.mt.azimuthLeft))*self.mt.finalWidth
 
         return QgsPointXY(newX, newY)
 
@@ -557,6 +557,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 rq.setFlags(QgsFeatureRequest.ExactIntersect)
                 poiFeatures = poiLayer.getFeatures(rq)
                 nPoi = (sum(1 for _ in poiFeatures) if poiFeatures is not None else 0)
+                self.log("{} ornaments".format(nPoi))
                 poiFeatures = poiLayer.getFeatures(rq)
 
             self.progressBar.setMaximum(
@@ -566,7 +567,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 + (9*10 + 2*len(aLines) if self.renderRidges.isChecked() else 0)  # ridges
                 + nPoi
             )
-            self.log("progress max : {}".format(self.progressBar.maximum()))
 
             self.progress(10, 'init')
 
@@ -578,11 +578,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     "Compass",
                     "memory",
                 )
-                aLeft = self.mt.azimuth('Y', 'D2')
-                aRight = self.mt.azimuth('Y', 'C2')
-                # self.log("{} {}".format(aLeft, aRight))
-                if aLeft > aRight:
-                    aRight = aRight + 360
 
                 compass.startEditing()
                 feats = []
@@ -590,9 +585,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     [QgsField("demslicer_azimuth", QVariant.Double)]
                 )
                 compass.updateFields()
-                for i, alpha in enumerate(range(round(aLeft), round(aRight))):
+                for i, alpha in enumerate(range(round(self.mt.azimuthLeft), round(self.mt.azimuthRight))):
                     c = QgsPoint(
-                        self.projBox.xMinimum() + (i*((self.projBox.xMaximum()-self.projBox.xMinimum())/(aRight-aLeft))),
+                        self.projBox.xMinimum() + (i*((self.projBox.xMaximum()-self.projBox.xMinimum())/(self.mt.azimuthRight-self.mt.azimuthLeft))),
                         self.yMin-self.base.value())
                     feature = QgsFeature()
                     feature.setAttributes([alpha])
@@ -858,7 +853,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 # Projeter des lignes ou polygones
                 if (
                     poiLayer.wkbType() == QgsWkbTypes.LineString
+                    or poiLayer.wkbType() == QgsWkbTypes.LineStringZ
                     or poiLayer.wkbType() == QgsWkbTypes.MultiLineString
+                    or poiLayer.wkbType() == QgsWkbTypes.MultiLineStringZ
                 ):
                     feats = []
                     fid = 1
@@ -1383,6 +1380,10 @@ class MapTool(QgsMapTool):
         # PEAK
         self.rubbers['peak'].setStrokeColor(QColor(255, 239, 15, 200))
 
+        # azimuth left and right
+        self.azimuthLeft = -45
+        self.azimuthRight = 45
+
     def hide(self):
         for rb in self.rubbers.values():
             rb.reset()
@@ -1901,6 +1902,11 @@ class MapTool(QgsMapTool):
         self.points['X'].setXY(self.milieu('A', 'C'))
         self.points['L'].setXY(self.milieu('B', 'C'))
 
+        self.azimuthLeft = self.azimuth('Y', 'D2')
+        self.azimuthRight = self.azimuth('Y', 'C2')
+        if self.azimuthRight < self.azimuthLeft:
+            self.azimuthRight = self.azimuthRight + 360
+            
         self.updateRubberGeom()
 
     def canvasReleaseEvent(self, _):
@@ -1909,6 +1915,9 @@ class MapTool(QgsMapTool):
             self.initpos[p] = QgsPointXY(self.points[p].pxy)
 
         self.mode = self.MODE_NONE
+
+        # traces
+        self.widget.log("az:[{}..{}]".format(self.azimuthLeft, self.azimuthRight))
 
     def activate(self):
         pass
