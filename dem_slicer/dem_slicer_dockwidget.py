@@ -315,8 +315,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             newX = self.mt.x('R') + self.mt.segAD.distance(QgsGeometry.fromPointXY(pt))
         else:
             aPeak = self.mt.pointXY('Y').azimuth(pt)
-            if aPeak < self.mt.azimuthLeft:
-                aPeak = aPeak + 360
+            #if aPeak < self.mt.azimuthLeft:
+            #    aPeak = aPeak + 360
             newX = self.mt.x('R') + ((aPeak-self.mt.azimuthLeft)/(self.mt.azimuthRight-self.mt.azimuthLeft))*self.mt.finalWidth
 
         return newX, newY
@@ -613,15 +613,15 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 vSource.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/source-points.qml"))
 
             # Line Slices --------------------------------------------------------------------
+            self.setAlert(self.tr("build lines"))
+            projectedLineslayer = QgsVectorLayer(
+                "MultiLineString?crs={}".format(QgsProject.instance().crs().authid()),
+                "Lines",
+                "memory",
+            )
+            self.buildLayer(projectedLineslayer, aLines)
             if self.renderLines.isChecked():
-                self.setAlert(self.tr("build lines"))
-                layer = QgsVectorLayer(
-                    "MultiLineString?crs={}".format(QgsProject.instance().crs().authid()),
-                    "Lines",
-                    "memory",
-                )
-                self.buildLayer(layer, aLines)
-                layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/lines.qml"))
+                projectedLineslayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/lines.qml"))
 
             # Poly Slices --------------------------------------------------------------------
             if self.renderPolygons.isChecked():
@@ -914,26 +914,29 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                     # projeter (nouvelle couche liée à la manipulation des vertices)
                     projectedLayer = QgsVectorLayer("MultiLineString?crs={}".format(QgsProject.instance().crs().authid()), "projected", "memory")
-                    # projectedLayer.dataProvider().addAttributes(poiZLayer.fields())
                     projectedLayer.startEditing()
+                    projectedLayer.dataProvider().addAttributes(poiZLayer.fields())
+                    feats = []
                     for fi, f in enumerate(poiZLayer.getFeatures()):
-                        self.log("{} geom to project".format(fi))
+                        if fi == 1:
+                            self.log("{} geom to project".format(fi))
                         newF = QgsFeature()
                         newG = None
-                        feats = []
                         for pi, part in enumerate(f.geometry().constParts()):
-                            self.log("  {} part to project".format(pi))
+                            if fi == 1:
+                                self.log("  {} part to project".format(pi))
                             newPart = QgsLineString()
                             for vertexQgsPoint in part.vertices():
                                 newX, newY = self.getProjectionPointAlti(
                                     QgsPointXY(vertexQgsPoint.x(), vertexQgsPoint.y()),
                                     vertexQgsPoint.m()
                                 )
-
                                 vtx = QgsPoint(newX, newY)
                                 newPart.addVertex(vtx)
 
                             if newG is None:
+                                if fi == 1:
+                                    self.log("  new G")
                                 newG = QgsGeometry(newPart)
                                 newG.convertToMultiType()
                             else:
@@ -942,20 +945,22 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                     pass
 
                         newF.setGeometry(newG)
-                        # newF.setFields(f.fields())
+                        newF.setFields(f.fields())
+                        newF.setAttributes(f.attributes())
                         feats.append(newF)
 
                     projectedLayer.dataProvider().addFeatures(feats)
                     projectedLayer.commitChanges()
 
                     # découper à nouveau (par les profils projetés)
-                    # processing.run("native:splitwithlines", {'INPUT':'memory://MultiLineStringM?crs=EPSG:2154&field=a:string(10,0)&uid={d6c3c392-84da-47b6-847e-d2fb80216e17}','LINES':'memory://MultiLineString?crs=EPSG:2154&uid={615ee6a1-ff25-4d53-812b-503b56269581}','OUTPUT':'TEMPORARY_OUTPUT'})
+                    # projectedLayer = tools.run("native:splitwithlines", projectedLayer, {'LINES': projectedLineslayer})
 
                     # calculer visibilité
                     # TODO
 
                     # ajouter au projet
                     QgsProject.instance().addMapLayer(projectedLayer)
+                    projectedLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-line.qml"))
 
                     """
                     feats = []
