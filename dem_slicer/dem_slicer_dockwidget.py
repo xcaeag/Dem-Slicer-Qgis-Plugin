@@ -261,15 +261,16 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         Returns if then point is visible (> 0) or hidden (<= 0) by the profiles
         """
         visi = 1
+        log = ""
         for i, p in enumerate(polys[::-1]):
-            if prof > i and p.contains(pt):
+            if prof >= i and p.contains(pt):
                 visi = visi - 1
 
-            # print(" p {} i {} visi {}".format(prof, i, visi))
-            if visi <= -10:
+            log = log + "prof {} i {} visi {}\n".format(prof, i, visi)
+            if visi <= -2:
                 break
 
-        return visi
+        return visi, log
 
     def getNewZ(self, zTarget, depth):
         """
@@ -293,9 +294,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # distance entre deux profils
         dd = self.mt.zoneDepth / (self.lineCount.value() - 1)
         # indice du profil
-        ixL = round((depth - self.mt.d0) / dd)
-        # print("{} {} {} {}".format(self.mt.zoneDepth, (depth - self.mt.d0), self.lineCount.value(), ixL))
-        return ixL
+        prof = (depth - self.mt.d0) / dd
+        # print("{} {} {} {}".format(self.mt.zoneDepth, (depth - self.mt.d0), self.lineCount.value(), prof))
+        return prof
 
     def getProjectionPoint(self, pt):
         # new Y
@@ -342,14 +343,15 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             polyline[i].setX(ptXY.x())
             polyline[i].setY(ptXY.y())
 
-    def buildLayer(self, layer, aLines):
+    def buildLayer(self, layer, aLinesOrPolys):
         layer.startEditing()
         layer.dataProvider().addAttributes(
             [QgsField("demslicer_num", QVariant.Int)]
         )
         layer.updateFields()
         feats = []
-        for fid, lin in enumerate(aLines):
+        # croissant en partant du fond (ligne d'horizon vers premier profil)
+        for fid, lin in enumerate(aLinesOrPolys):
             self.progress(1, '')
             feature = QgsFeature(fid)
             feature.setAttributes([str(fid)])
@@ -493,16 +495,17 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         def projLineString(feat, polyline):
             # reprojet points
-            self.projPolyline(polyline)
             if len(polyline) > 1:
+                pt0 = QgsPointXY(polyline[0])
+                self.projPolyline(polyline)
                 if self.parallelView.isChecked():
-                    depth = self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(polyline[0]))
+                    depth = self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(pt0))
                 else:
-                    depth = self.mt.pointXY('Y').distance(polyline[0])
+                    depth = self.mt.pointXY('Y').distance(pt0)
                 prof = self.getProf(depth)
-                visi = self.getVisibility(polyline[1], aPolys, prof)
+                visi, log = self.getVisibility(polyline[1], aPolys, prof)
                 fet0 = QgsFeature(fid)
-                fet0.setAttributes(feat.attributes() + [str(fid), visi, prof])
+                fet0.setAttributes(feat.attributes() + [str(fid), visi, int(prof)+1, log])
                 fet0.setGeometry(QgsGeometry.fromPolylineXY(polyline))
                 return fet0
             else:
@@ -521,9 +524,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 prof = self.getProf(depth)
 
             try:
-                visi = self.getVisibility(polygon[0][1], aPolys, prof)
+                visi, log = self.getVisibility(polygon[0][1], aPolys, prof)
                 fet0 = QgsFeature(fid)
-                fet0.setAttributes(feat.attributes() + [str(fid), visi, prof])
+                fet0.setAttributes(feat.attributes() + [str(fid), visi, int(prof)+1, log])
                 fet0.setGeometry(QgsGeometry.fromPolygonXY(polygon))
                 return fet0
             except Exception:
@@ -590,7 +593,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         self.projBox.xMinimum() + (i*((self.projBox.xMaximum()-self.projBox.xMinimum())/(self.mt.azimuthRight-self.mt.azimuthLeft))),
                         self.yMin-self.base.value())
                     feature = QgsFeature()
-                    feature.setAttributes([alpha])
+                    feature.setAttributes([alpha if alpha >= 0 else alpha+360])
                     feature.setGeometry(c)
                     feats.append(feature)
 
@@ -769,7 +772,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 hull = zon.convexHull()
                 if (
                     poiLayer.wkbType() == QgsWkbTypes.Point
+                    or poiLayer.wkbType() == QgsWkbTypes.PointZ
                     or poiLayer.wkbType() == QgsWkbTypes.MultiPoint
+                    or poiLayer.wkbType() == QgsWkbTypes.MultiPointZ
                 ):
                     feats = []
                     fid = 1
@@ -808,11 +813,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                             )
 
                             pt = QgsGeometry.fromPointXY(QgsPointXY(newX, newY))
-                            visi = self.getVisibility(pt, aPolys, prof)
+                            visi, log = self.getVisibility(pt, aPolys, prof)
                             fet0 = QgsFeature(fid)
                             fet0.setAttributes(
                                 feat.attributes()
-                                + [str(fid), prof, z, depth, visi, azimuth]
+                                + [str(fid), int(prof)+1, z, depth, visi, azimuth]
                             )
                             fid = fid + 1
                             fet0.setGeometry(pt)
@@ -851,6 +856,17 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         layer.commitChanges()
 
                 # Projeter des lignes ou polygones
+
+                # filtrer (emprise zone)
+                # découper couche d'habillage par les lignes sources
+                # processing.run("native:splitwithlines", {'INPUT':'memory://LineString?crs=EPSG:2154&uid={9212d076-98d8-4a00-913f-8e37799b8e1e}','LINES':'memory://LineString?crs=EPSG:4326&uid={e588f5be-8b5f-418c-a769-1c0d4d80c550}','OUTPUT':'TEMPORARY_OUTPUT'})                
+                # affecter une profondeur à chaque entité
+                # récupérer alti (valeur m)
+                # processing.run("native:setmfromraster", {'INPUT':'memory://MultiLineString?crs=EPSG:2154&field=a:string(10,0)&uid={b7ef68e7-7c86-4b0a-8e0a-203f971ce8bd}','RASTER':'F:/projets/cartes-qgis/data/mnt/alpes.tif','BAND':1,'NODATA':0,'SCALE':1,'OUTPUT':'TEMPORARY_OUTPUT'})
+                # projeter
+                # découper à nouveau (par les profils projetés)
+                # processing.run("native:splitwithlines", {'INPUT':'memory://MultiLineStringM?crs=EPSG:2154&field=a:string(10,0)&uid={d6c3c392-84da-47b6-847e-d2fb80216e17}','LINES':'memory://MultiLineString?crs=EPSG:2154&uid={615ee6a1-ff25-4d53-812b-503b56269581}','OUTPUT':'TEMPORARY_OUTPUT'})
+                # calculer visibilité
                 if (
                     poiLayer.wkbType() == QgsWkbTypes.LineString
                     or poiLayer.wkbType() == QgsWkbTypes.LineStringZ
@@ -912,6 +928,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 QgsField("demslicer_num", QVariant.Int),
                                 QgsField("demslicer_visi", QVariant.Int),
                                 QgsField("demslicer_prof", QVariant.Int),
+                                QgsField("demslicer_log", QVariant.String)
                             ]
                         )
                         layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
@@ -923,7 +940,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                 if (
                     poiLayer.wkbType() == QgsWkbTypes.Polygon
+                    or poiLayer.wkbType() == QgsWkbTypes.PolygonZ
                     or poiLayer.wkbType() == QgsWkbTypes.MultiPolygon
+                    or poiLayer.wkbType() == QgsWkbTypes.MultiPolygonZ
                 ):
                     feats = []
                     fid = 1
@@ -978,6 +997,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 QgsField("demslicer_num", QVariant.Int),
                                 QgsField("demslicer_visi", QVariant.Int),
                                 QgsField("demslicer_prof", QVariant.Int),
+                                QgsField("demslicer_log", QVariant.String)
                             ]
                         )
                         layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
@@ -1086,6 +1106,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             s.setValue("dem_slicer/renderPolygons", self.renderPolygons.isChecked())
             s.setValue("dem_slicer/renderRidges", self.renderRidges.isChecked())
             s.setValue("dem_slicer/renderCompass", self.renderCompass.isChecked())
+            s.setValue("dem_slicer/renderSource", self.renderSource.isChecked())
 
             s.sync()
 
@@ -1135,6 +1156,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             )
             self.renderCompass.setChecked(
                 True if s.value("dem_slicer/renderCompass") else False
+            )
+            self.renderSource.setChecked(
+                True if s.value("dem_slicer/renderSource") else False
             )
 
             for p in self.mt.ALL_POINTS:
@@ -1530,23 +1554,22 @@ class MapTool(QgsMapTool):
 
         # box
         if self.widget.parallelView.isChecked():
-            self.rubbers['box'].setToGeometry(
-                self.geomPolygon(['D', 'A', 'B', 'C', 'D'])
-            )
+            self.geomBox = self.geomPolygon(['D', 'A', 'B', 'C', 'D'])
+            self.rubbers['box'].setToGeometry(self.geomBox)
             for p in self.HANDLES_1:
                 try:
                     self.rubbers[p].setToGeometry(self.geomPoint(p))
                 except Exception:
                     pass
         else:
-            self.rubbers['box'].setToGeometry(
-                QgsGeometry.fromMultiPolygonXY(
-                    [[
-                        leftEdge + polyline[0] + rightEdge[::-1] + polyline[-1][::-1]
-                        + [leftEdge[0]]
-                    ]]
-                )
+            self.geomBox = QgsGeometry.fromMultiPolygonXY(
+                [[
+                    leftEdge + polyline[0] + rightEdge[::-1] + polyline[-1][::-1]
+                    + [leftEdge[0]]
+                ]]
             )
+            self.rubbers['box'].setToGeometry(self.geomBox)
+
             for p in self.HANDLES_2:
                 try:
                     self.rubbers[p].setToGeometry(self.geomPoint(p))
@@ -1906,7 +1929,7 @@ class MapTool(QgsMapTool):
         self.azimuthRight = self.azimuth('Y', 'C2')
         if self.azimuthRight < self.azimuthLeft:
             self.azimuthRight = self.azimuthRight + 360
-            
+
         self.updateRubberGeom()
 
     def canvasReleaseEvent(self, _):
