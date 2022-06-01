@@ -49,7 +49,7 @@ from qgis.core import (
     Qgis,
     QgsWkbTypes,
     QgsGeometry,
-    QgsPoint, QgsPointXY,
+    QgsPoint, QgsPointXY, QgsLineString,
     QgsMessageLog,
     QgsProject,
     QgsMapLayer,
@@ -298,12 +298,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # print("{} {} {} {}".format(self.mt.zoneDepth, (depth - self.mt.d0), self.lineCount.value(), prof))
         return prof
 
-    def getProjectionPoint(self, pt):
+    def getProjectionPointAlti(self, pt, alti):
         # new Y
         d = (self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(pt))) \
             if self.parallelView.isChecked() else self.mt.pointXY('Y').distance(pt)
-        z = self.getElevation(self.xMap2Raster.transform(pt.x(), pt.y()))
-        newZ = self.getNewZ(z, d)
+        newZ = self.getNewZ(alti, d)
         zf = self.zFactor.value()
         newY = (
             self.mt.y('R')
@@ -320,6 +319,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 aPeak = aPeak + 360
             newX = self.mt.x('R') + ((aPeak-self.mt.azimuthLeft)/(self.mt.azimuthRight-self.mt.azimuthLeft))*self.mt.finalWidth
 
+        return newX, newY
+
+    def getProjectionPoint(self, pt):
+        alti = self.getElevation(self.xMap2Raster.transform(pt.x(), pt.y()))
+        newX, newY = self.getProjectionPointAlti(pt, alti)
         return QgsPointXY(newX, newY)
 
     def getThumbnailGeom(self) -> QgsGeometry:
@@ -857,22 +861,103 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                 # Projeter des lignes ou polygones
 
-                # filtrer (emprise zone)
-                # découper couche d'habillage par les lignes sources
-                # processing.run("native:splitwithlines", {'INPUT':'memory://LineString?crs=EPSG:2154&uid={9212d076-98d8-4a00-913f-8e37799b8e1e}','LINES':'memory://LineString?crs=EPSG:4326&uid={e588f5be-8b5f-418c-a769-1c0d4d80c550}','OUTPUT':'TEMPORARY_OUTPUT'})                
-                # affecter une profondeur à chaque entité
-                # récupérer alti (valeur m)
-                # processing.run("native:setmfromraster", {'INPUT':'memory://MultiLineString?crs=EPSG:2154&field=a:string(10,0)&uid={b7ef68e7-7c86-4b0a-8e0a-203f971ce8bd}','RASTER':'F:/projets/cartes-qgis/data/mnt/alpes.tif','BAND':1,'NODATA':0,'SCALE':1,'OUTPUT':'TEMPORARY_OUTPUT'})
-                # projeter
-                # découper à nouveau (par les profils projetés)
-                # processing.run("native:splitwithlines", {'INPUT':'memory://MultiLineStringM?crs=EPSG:2154&field=a:string(10,0)&uid={d6c3c392-84da-47b6-847e-d2fb80216e17}','LINES':'memory://MultiLineString?crs=EPSG:2154&uid={615ee6a1-ff25-4d53-812b-503b56269581}','OUTPUT':'TEMPORARY_OUTPUT'})
-                # calculer visibilité
                 if (
                     poiLayer.wkbType() == QgsWkbTypes.LineString
                     or poiLayer.wkbType() == QgsWkbTypes.LineStringZ
                     or poiLayer.wkbType() == QgsWkbTypes.MultiLineString
                     or poiLayer.wkbType() == QgsWkbTypes.MultiLineStringZ
                 ):
+                    # couche "zone"
+                    lZone = QgsVectorLayer("Polygon?crs={}".format(QgsProject.instance().crs().authid()), "lzone", "memory")
+                    lZone.startEditing()
+                    fetZone = QgsFeature()
+                    fetZone.setGeometry(self.mt.geomZone)
+                    lZone.dataProvider().addFeature(fetZone)
+                    lZone.commitChanges()
+                    QgsProject.instance().addMapLayer(lZone)
+
+                    # couche lignes source
+                    lCut = QgsVectorLayer("MultiLineString?crs={}".format(QgsProject.instance().crs().authid()), "lcut", "memory")
+                    lCut.startEditing()
+                    for polyline in self.mt.getLines():
+                        f = QgsFeature()
+                        f.setGeometry(QgsGeometry.fromPolylineXY(polyline))
+                        lCut.dataProvider().addFeature(f)
+                    lCut.commitChanges()
+                    QgsProject.instance().addMapLayer(lCut)
+
+                    # filtrer (emprise zone)
+                    poiZLayer = tools.run("native:extractbylocation", poiLayer, {'PREDICATE': [0], 'INTERSECT': lZone})
+
+                    # découper couche d'habillage par les lignes sources
+                    poiZLayer = tools.run("native:splitwithlines", poiZLayer, {'LINES': lCut})
+                    poiZLayer = tools.run("native:multiparttosingleparts", poiZLayer)
+                    poiZLayer.dataProvider().addAttributes([
+                            QgsField("demslicer_visi", QVariant.Int),
+                            QgsField("demslicer_prof", QVariant.Int),
+                            QgsField("demslicer_log", QVariant.String)
+                        ]
+                    )
+                    poiZLayer.updateFields()
+
+                    # affecter une profondeur à chaque entité
+                    poiZLayer.startEditing()
+                    for feat in poiZLayer.getFeatures():
+                        depth = self.mt.d0 + self.mt.segCD.distance(feat.geometry().centroid())
+                        feat['demslicer_prof'] = int(self.getProf(depth))+1
+                        poiZLayer.updateFeature(feat)
+                    poiZLayer.commitChanges()
+
+                    # récupérer alti (valeur m)
+                    poiZLayer = tools.run("native:setmfromraster", poiZLayer, {'RASTER': self.mntLayer, 'BAND': 1, 'NODATA': 0, 'SCALE': 1})
+                    QgsProject.instance().addMapLayer(poiZLayer)
+
+                    # projeter (nouvelle couche liée à la manipulation des vertices)
+                    projectedLayer = QgsVectorLayer("MultiLineString?crs={}".format(QgsProject.instance().crs().authid()), "projected", "memory")
+                    # projectedLayer.dataProvider().addAttributes(poiZLayer.fields())
+                    projectedLayer.startEditing()
+                    for fi, f in enumerate(poiZLayer.getFeatures()):
+                        self.log("{} geom to project".format(fi))
+                        newF = QgsFeature()
+                        newG = None
+                        feats = []
+                        for pi, part in enumerate(f.geometry().constParts()):
+                            self.log("  {} part to project".format(pi))
+                            newPart = QgsLineString()
+                            for vertexQgsPoint in part.vertices():
+                                newX, newY = self.getProjectionPointAlti(
+                                    QgsPointXY(vertexQgsPoint.x(), vertexQgsPoint.y()),
+                                    vertexQgsPoint.m()
+                                )
+
+                                vtx = QgsPoint(newX, newY)
+                                newPart.addVertex(vtx)
+
+                            if newG is None:
+                                newG = QgsGeometry(newPart)
+                                newG.convertToMultiType()
+                            else:
+                                r = newG.addPart(newPart)
+                                if r != 0:
+                                    pass
+
+                        newF.setGeometry(newG)
+                        # newF.setFields(f.fields())
+                        feats.append(newF)
+
+                    projectedLayer.dataProvider().addFeatures(feats)
+                    projectedLayer.commitChanges()
+
+                    # découper à nouveau (par les profils projetés)
+                    # processing.run("native:splitwithlines", {'INPUT':'memory://MultiLineStringM?crs=EPSG:2154&field=a:string(10,0)&uid={d6c3c392-84da-47b6-847e-d2fb80216e17}','LINES':'memory://MultiLineString?crs=EPSG:2154&uid={615ee6a1-ff25-4d53-812b-503b56269581}','OUTPUT':'TEMPORARY_OUTPUT'})
+
+                    # calculer visibilité
+                    # TODO
+
+                    # ajouter au projet
+                    QgsProject.instance().addMapLayer(projectedLayer)
+
+                    """
                     feats = []
                     fid = 1
                     for feat in poiFeatures:
@@ -937,6 +1022,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         layer.dataProvider().addFeatures(feats)
                         layer.commitChanges()
                         layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-line.qml"))
+                    """
 
                 if (
                     poiLayer.wkbType() == QgsWkbTypes.Polygon
@@ -1554,21 +1640,23 @@ class MapTool(QgsMapTool):
 
         # box
         if self.widget.parallelView.isChecked():
-            self.geomBox = self.geomPolygon(['D', 'A', 'B', 'C', 'D'])
-            self.rubbers['box'].setToGeometry(self.geomBox)
+            self.geomZone = self.geomPolygon(['D', 'A', 'B', 'C', 'D'])
+            self.geomZone = self.geomZone.buffer(0, 1)
+            self.rubbers['box'].setToGeometry(self.geomZone)
             for p in self.HANDLES_1:
                 try:
                     self.rubbers[p].setToGeometry(self.geomPoint(p))
                 except Exception:
                     pass
         else:
-            self.geomBox = QgsGeometry.fromMultiPolygonXY(
+            self.geomZone = QgsGeometry.fromMultiPolygonXY(
                 [[
                     leftEdge + polyline[0] + rightEdge[::-1] + polyline[-1][::-1]
                     + [leftEdge[0]]
                 ]]
             )
-            self.rubbers['box'].setToGeometry(self.geomBox)
+            self.geomZone = self.geomZone.buffer(0, 1)
+            self.rubbers['box'].setToGeometry(self.geomZone)
 
             for p in self.HANDLES_2:
                 try:
