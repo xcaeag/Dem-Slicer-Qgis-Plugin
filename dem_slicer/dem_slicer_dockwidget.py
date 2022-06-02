@@ -56,8 +56,7 @@ from qgis.core import (
     QgsVectorLayer,
     QgsField,
     QgsUnitTypes,
-)
-from qgis.core import (
+    QgsCoordinateReferenceSystem,
     QgsFeature,
     QgsCoordinateTransform,
     QgsFeatureRequest,
@@ -889,6 +888,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     # filtrer (emprise zone)
                     poiZLayer = tools.run("native:extractbylocation", poiLayer, {'PREDICATE': [0], 'INTERSECT': lZone})
 
+                    poiZLayer = tools.run("native:reprojectlayer", poiZLayer, 
+                        {'TARGET_CRS': QgsCoordinateReferenceSystem("{}".format(QgsProject.instance().crs().authid()))}
+                    )
+
                     # découper couche d'habillage par les lignes sources
                     poiZLayer = tools.run("native:splitwithlines", poiZLayer, {'LINES': lCut})
                     poiZLayer = tools.run("native:multiparttosingleparts", poiZLayer)
@@ -945,7 +948,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                     pass
 
                         newF.setGeometry(newG)
-                        newF.setFields(f.fields())
+                        # newF.setFields(f.fields())
                         newF.setAttributes(f.attributes())
                         feats.append(newF)
 
@@ -960,7 +963,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                     # ajouter au projet
                     QgsProject.instance().addMapLayer(projectedLayer)
-                    projectedLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-line.qml"))
+                    #projectedLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-line.qml"))
 
                     """
                     feats = []
