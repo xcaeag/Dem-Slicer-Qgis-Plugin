@@ -49,7 +49,8 @@ from qgis.core import (
     Qgis,
     QgsWkbTypes,
     QgsGeometry,
-    QgsPoint, QgsPointXY, QgsLineString,
+    QgsPoint, QgsPointXY,
+    QgsLineString,
     QgsMessageLog,
     QgsProject,
     QgsMapLayer,
@@ -363,7 +364,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         layer.dataProvider().addFeatures(feats)
         layer.commitChanges()
-        QgsProject.instance().addMapLayer(layer)
 
     def getSourcePolylines(self, dx, sample=False):
         if sample:
@@ -563,7 +563,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 rq.setFlags(QgsFeatureRequest.ExactIntersect)
                 poiFeatures = poiLayer.getFeatures(rq)
                 nPoi = (sum(1 for _ in poiFeatures) if poiFeatures is not None else 0)
-                self.log("{} ornaments".format(nPoi))
                 poiFeatures = poiLayer.getFeatures(rq)
 
             self.progressBar.setMaximum(
@@ -612,14 +611,15 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 vSource.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/source-points.qml"))
 
             # Line Slices --------------------------------------------------------------------
-            self.setAlert(self.tr("build lines"))
-            projectedLineslayer = QgsVectorLayer(
-                "MultiLineString?crs={}".format(QgsProject.instance().crs().authid()),
-                "Lines",
-                "memory",
-            )
-            self.buildLayer(projectedLineslayer, aLines)
             if self.renderLines.isChecked():
+                self.setAlert(self.tr("build lines"))
+                projectedLineslayer = QgsVectorLayer(
+                    "MultiLineString?crs={}".format(QgsProject.instance().crs().authid()),
+                    "Lines",
+                    "memory",
+                )
+                self.buildLayer(projectedLineslayer, aLines)
+                QgsProject.instance().addMapLayer(projectedLineslayer)
                 projectedLineslayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/lines.qml"))
 
             # Poly Slices --------------------------------------------------------------------
@@ -631,6 +631,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     "memory",
                 )
                 self.buildLayer(pLayer, aPolys)
+                QgsProject.instance().addMapLayer(pLayer)
                 if self.renderRidges.isChecked():
                     pLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/polygons_ridges.qml"))
                 else:
@@ -865,6 +866,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     or poiLayer.wkbType() == QgsWkbTypes.LineStringZ
                     or poiLayer.wkbType() == QgsWkbTypes.MultiLineString
                     or poiLayer.wkbType() == QgsWkbTypes.MultiLineStringZ
+                    or poiLayer.wkbType() == QgsWkbTypes.Polygon
+                    or poiLayer.wkbType() == QgsWkbTypes.PolygonZ
+                    or poiLayer.wkbType() == QgsWkbTypes.MultiPolygon
+                    or poiLayer.wkbType() == QgsWkbTypes.MultiPolygonZ
                 ):
                     # couche "zone"
                     lZone = QgsVectorLayer("Polygon?crs={}".format(QgsProject.instance().crs().authid()), "lzone", "memory")
@@ -873,7 +878,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     fetZone.setGeometry(self.mt.geomZone)
                     lZone.dataProvider().addFeature(fetZone)
                     lZone.commitChanges()
-                    QgsProject.instance().addMapLayer(lZone)
+                    # QgsProject.instance().addMapLayer(lZone)
 
                     # couche lignes source
                     lCut = QgsVectorLayer("MultiLineString?crs={}".format(QgsProject.instance().crs().authid()), "lcut", "memory")
@@ -883,12 +888,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         f.setGeometry(QgsGeometry.fromPolylineXY(polyline))
                         lCut.dataProvider().addFeature(f)
                     lCut.commitChanges()
-                    QgsProject.instance().addMapLayer(lCut)
+                    # QgsProject.instance().addMapLayer(lCut)
 
-                    # filtrer (emprise zone)
-                    poiZLayer = tools.run("native:extractbylocation", poiLayer, {'PREDICATE': [0], 'INTERSECT': lZone})
+                    # cliper (emprise zone)
+                    poiZLayer = tools.run("native:clip", poiLayer, {'OVERLAY': lZone})
 
-                    poiZLayer = tools.run("native:reprojectlayer", poiZLayer, 
+                    poiZLayer = tools.run("native:reprojectlayer", poiZLayer,
                         {'TARGET_CRS': QgsCoordinateReferenceSystem("{}".format(QgsProject.instance().crs().authid()))}
                     )
 
@@ -903,6 +908,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     )
                     poiZLayer.updateFields()
 
+                    # QgsProject.instance().addMapLayer(poiZLayer)
+
                     # affecter une profondeur à chaque entité
                     poiZLayer.startEditing()
                     for feat in poiZLayer.getFeatures():
@@ -913,32 +920,55 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                     # récupérer alti (valeur m)
                     poiZLayer = tools.run("native:setmfromraster", poiZLayer, {'RASTER': self.mntLayer, 'BAND': 1, 'NODATA': 0, 'SCALE': 1})
-                    QgsProject.instance().addMapLayer(poiZLayer)
+                    # QgsProject.instance().addMapLayer(poiZLayer)
 
+                    finalType = QgsWkbTypes.MultiLineString
+                    gType = "MultiLineString"
+                    style = "ornementation-line.qml"
                     # projeter (nouvelle couche liée à la manipulation des vertices)
-                    projectedLayer = QgsVectorLayer("MultiLineString?crs={}".format(QgsProject.instance().crs().authid()), "projected", "memory")
+                    if (
+                        poiLayer.wkbType() == QgsWkbTypes.Polygon
+                        or poiLayer.wkbType() == QgsWkbTypes.PolygonZ
+                        or poiLayer.wkbType() == QgsWkbTypes.MultiPolygon
+                        or poiLayer.wkbType() == QgsWkbTypes.MultiPolygonZ
+                    ) :
+                        finalType = QgsWkbTypes.MultiPolygon
+                        style = "ornementation-polygon.qml"
+
+                    projectedLayer = QgsVectorLayer(
+                        "{}?crs={}".format(gType, QgsProject.instance().crs().authid()),
+                        'projection - ' + poiLayer.name(),
+                        "memory"
+                    )
+
                     projectedLayer.startEditing()
                     projectedLayer.dataProvider().addAttributes(poiZLayer.fields())
                     feats = []
                     for fi, f in enumerate(poiZLayer.getFeatures()):
-                        if fi == 1:
+                        if fi < 3:
                             self.log("{} geom to project".format(fi))
                         newF = QgsFeature()
                         newG = None
                         for pi, part in enumerate(f.geometry().constParts()):
-                            if fi == 1:
+                            if fi < 3:
                                 self.log("  {} part to project".format(pi))
                             newPart = QgsLineString()
+                            vtx0 = None
                             for vertexQgsPoint in part.vertices():
                                 newX, newY = self.getProjectionPointAlti(
                                     QgsPointXY(vertexQgsPoint.x(), vertexQgsPoint.y()),
                                     vertexQgsPoint.m()
                                 )
+                                if vtx0 is None:
+                                    vtx0 = QgsPoint(newX, newY)
                                 vtx = QgsPoint(newX, newY)
                                 newPart.addVertex(vtx)
 
+                            if gType == "MultiPolygon" and vtx0 is not None:
+                                newPart.addVertex(vtx0)
+
                             if newG is None:
-                                if fi == 1:
+                                if fi < 3:
                                     self.log("  new G")
                                 newG = QgsGeometry(newPart)
                                 newG.convertToMultiType()
@@ -947,8 +977,14 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 if r != 0:
                                     pass
 
-                        newF.setGeometry(newG)
-                        # newF.setFields(f.fields())
+                        if fi < 3:
+                            self.log("  {} setGeometry".format(fi))
+
+                        if gType == "MultiLineString":
+                            newF.setGeometry(newG)
+                        else:
+                            newF.setGeometry(newG.convertToType(QgsWkbTypes.MultiPolygon))
+
                         newF.setAttributes(f.attributes())
                         feats.append(newF)
 
@@ -959,11 +995,20 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     # projectedLayer = tools.run("native:splitwithlines", projectedLayer, {'LINES': projectedLineslayer})
 
                     # calculer visibilité
-                    # TODO
+                    projectedLayer.startEditing()
+                    for feat in projectedLayer.getFeatures():
+                        visi, log = self.getVisibility(feat.geometry().centroid(), aPolys, feat['demslicer_prof'])
+                        feat['demslicer_visi'] = visi
+                        feat['demslicer_log'] = log
+                        projectedLayer.updateFeature(feat)
+                    projectedLayer.commitChanges()
+
+                    if finalType == QgsWkbTypes.MultiPolygon:
+                        projectedLayer = tools.run("qgis:linestopolygons", projectedLayer, {}, name='projection - ' + poiLayer.name())
 
                     # ajouter au projet
                     QgsProject.instance().addMapLayer(projectedLayer)
-                    #projectedLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-line.qml"))
+                    projectedLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/{}".format(style)))
 
                     """
                     feats = []
@@ -1032,7 +1077,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-line.qml"))
                     """
 
-                if (
+                """if (
                     poiLayer.wkbType() == QgsWkbTypes.Polygon
                     or poiLayer.wkbType() == QgsWkbTypes.PolygonZ
                     or poiLayer.wkbType() == QgsWkbTypes.MultiPolygon
@@ -1102,7 +1147,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         layer.styleManager().addStyle("poi", list(sourceStyles.values())[0])
                         layer.commitChanges()
                         layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-polygon.qml"))
-
+                    """
         finally:
             self.setAlert("")
             self.progressBar.setValue(0)
