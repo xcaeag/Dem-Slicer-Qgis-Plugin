@@ -315,7 +315,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             newX = self.mt.x('R') + self.mt.segAD.distance(QgsGeometry.fromPointXY(pt))
         else:
             aPeak = self.mt.pointXY('Y').azimuth(pt)
-            #if aPeak < self.mt.azimuthLeft:
+            # if aPeak < self.mt.azimuthLeft:
             #    aPeak = aPeak + 360
             newX = self.mt.x('R') + ((aPeak-self.mt.azimuthLeft)/(self.mt.azimuthRight-self.mt.azimuthLeft))*self.mt.finalWidth
 
@@ -340,12 +340,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def getPeakGeom(self, ptPeak):
         ptXY = self.getProjectionPoint(ptPeak)
         return QgsGeometry.fromPointXY(ptXY)
-
-    def projPolyline(self, polyline):
-        for i, pt in enumerate(polyline):
-            ptXY = self.getProjectionPoint(pt)
-            polyline[i].setX(ptXY.x())
-            polyline[i].setY(ptXY.y())
 
     def buildLayer(self, layer, aLinesOrPolys):
         layer.startEditing()
@@ -495,45 +489,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # self.log("progress {} : {}".format(s, self.progressBar.value()))
 
     def buildSlices(self):
-
-        def projLineString(feat, polyline):
-            # reprojet points
-            if len(polyline) > 1:
-                pt0 = QgsPointXY(polyline[0])
-                self.projPolyline(polyline)
-                if self.parallelView.isChecked():
-                    depth = self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(pt0))
-                else:
-                    depth = self.mt.pointXY('Y').distance(pt0)
-                prof = self.getProf(depth)
-                visi, log = self.getVisibility(polyline[1], aPolys, prof)
-                fet0 = QgsFeature(fid)
-                fet0.setAttributes(feat.attributes() + [str(fid), visi, int(prof)+1, log])
-                fet0.setGeometry(QgsGeometry.fromPolylineXY(polyline))
-                return fet0
-            else:
-                return None
-
-        def projPolygon(feat, polygon):
-            # reprojet points
-            prof = 0
-            # self.log("in projPolyline, altY = {}".format(self.altY))
-            for polyline in polygon:
-                self.projPolyline(polyline)
-                if self.parallelView.isChecked():
-                    depth = self.mt.d0 + self.mt.segCD.distance(QgsGeometry.fromPointXY(polyline[0]))
-                else:
-                    depth = self.mt.pointXY('Y').distance(polyline[0])
-                prof = self.getProf(depth)
-
-            try:
-                visi, log = self.getVisibility(polygon[0][1], aPolys, prof)
-                fet0 = QgsFeature(fid)
-                fet0.setAttributes(feat.attributes() + [str(fid), visi, int(prof)+1, log])
-                fet0.setGeometry(QgsGeometry.fromPolygonXY(polygon))
-                return fet0
-            except Exception:
-                return None
 
         try:
             QgsApplication.setOverrideCursor(Qt.WaitCursor)
@@ -763,17 +718,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             if poiLayer is not None:
                 self.setAlert(self.tr("project POIs"))
 
-                aH, aD = self.mt.azimuth('Y', 'H'), self.mt.azimuth('Y', 'D2')
-                if aD > aH:
-                    aH = aH + 360
-                angleVue = 2 * (aH - aD)
-
                 mapcrs = self.canvas.mapSettings().destinationCrs()
                 xPoi2Map = QgsCoordinateTransform(
                     poiLayer.crs(), mapcrs, QgsProject.instance()
                 )
 
-                hull = zon.convexHull()
                 if (
                     poiLayer.wkbType() == QgsWkbTypes.Point
                     or poiLayer.wkbType() == QgsWkbTypes.PointZ
@@ -788,36 +737,22 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         poiPointXY = xPoi2Map.transform(
                             feat.geometry().asPoint().x(), feat.geometry().asPoint().y()
                         )
-                        if hull.contains(poiPointXY):
+                        if self.mt.geomZone.contains(poiPointXY):
                             z = self.getElevation(
                                 self.xMap2Raster.transform(poiPointXY.x(), poiPointXY.y())
                             )
-                            # reprojects points
-                            azimuth = 0
-                            if self.parallelView.isChecked():
-                                depth = self.mt.d0 + self.mt.segCD.distance(
-                                    QgsGeometry.fromPointXY(poiPointXY)
-                                )
-                                newX = self.mt.x('R') + self.mt.segAD.distance(
-                                    QgsGeometry.fromPointXY(poiPointXY)
-                                )
-                            else:
-                                depth = self.mt.pointXY('Y').distance(poiPointXY)
-                                azimuth = self.mt.pointXY('Y').azimuth(poiPointXY)
-                                az = azimuth + 360 if aD > azimuth else azimuth
-                                fx = (az - aD) / angleVue
-                                newX = self.mt.x('R') + fx * self.mt.finalWidth
-
-                            newZ = self.getNewZ(z, depth)
+                            depth = self.mt.pointXY('Y').distance(poiPointXY)
                             prof = self.getProf(depth)
-                            newY = (
-                                self.mt.y('R')
-                                + (newZ * self.zFactor.value())
-                                + (depth * self.zShift.value() / self.mt.zoneDepth)
+                            newX, newY = self.getProjectionPointAlti(
+                                QgsPointXY(poiPointXY.x(), poiPointXY.y()), z
                             )
-
+                            if self.parallelView.isChecked():
+                                azimuth = 0
+                            else:
+                                azimuth = self.mt.pointXY('Y').azimuth(poiPointXY)
+                            
                             pt = QgsGeometry.fromPointXY(QgsPointXY(newX, newY))
-                            visi, log = self.getVisibility(pt, aPolys, prof)
+                            visi, _ = self.getVisibility(pt, aPolys, prof)
                             fet0 = QgsFeature(fid)
                             fet0.setAttributes(
                                 feat.attributes()
@@ -832,7 +767,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                             "MultiPoint?crs={}".format(
                                 QgsProject.instance().crs().authid()
                             ),
-                            "P.O.I.",
+                            'projection - ' + poiLayer.name(),
                             "memory",
                         )
                         QgsProject.instance().addMapLayer(layer)
@@ -903,7 +838,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     poiZLayer.dataProvider().addAttributes([
                             QgsField("demslicer_visi", QVariant.Int),
                             QgsField("demslicer_prof", QVariant.Int),
-                            QgsField("demslicer_log", QVariant.String)
+                            # QgsField("demslicer_log", QVariant.String)
                         ]
                     )
                     poiZLayer.updateFields()
@@ -913,7 +848,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     # affecter une profondeur à chaque entité
                     poiZLayer.startEditing()
                     for feat in poiZLayer.getFeatures():
-                        depth = self.mt.d0 + self.mt.segCD.distance(feat.geometry().centroid())
+                        depth = self.mt.pointXY('Y').distance(feat.geometry().centroid().asPoint())
                         feat['demslicer_prof'] = int(self.getProf(depth))+1
                         poiZLayer.updateFeature(feat)
                     poiZLayer.commitChanges()
@@ -944,14 +879,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     projectedLayer.startEditing()
                     projectedLayer.dataProvider().addAttributes(poiZLayer.fields())
                     feats = []
-                    for fi, f in enumerate(poiZLayer.getFeatures()):
-                        if fi < 3:
-                            self.log("{} geom to project".format(fi))
+                    for f in poiZLayer.getFeatures():
+                        self.progress(1, 'poi')
+
                         newF = QgsFeature()
                         newG = None
-                        for pi, part in enumerate(f.geometry().constParts()):
-                            if fi < 3:
-                                self.log("  {} part to project".format(pi))
+                        for part in f.geometry().constParts():
                             newPart = QgsLineString()
                             vtx0 = None
                             for vertexQgsPoint in part.vertices():
@@ -968,17 +901,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 newPart.addVertex(vtx0)
 
                             if newG is None:
-                                if fi < 3:
-                                    self.log("  new G")
                                 newG = QgsGeometry(newPart)
                                 newG.convertToMultiType()
                             else:
                                 r = newG.addPart(newPart)
                                 if r != 0:
                                     pass
-
-                        if fi < 3:
-                            self.log("  {} setGeometry".format(fi))
 
                         if gType == "MultiLineString":
                             newF.setGeometry(newG)
@@ -997,9 +925,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     # calculer visibilité
                     projectedLayer.startEditing()
                     for feat in projectedLayer.getFeatures():
-                        visi, log = self.getVisibility(feat.geometry().centroid(), aPolys, feat['demslicer_prof'])
+                        visi, _ = self.getVisibility(feat.geometry().centroid(), aPolys, feat['demslicer_prof'])
                         feat['demslicer_visi'] = visi
-                        feat['demslicer_log'] = log
+                        # feat['demslicer_log'] = log
                         projectedLayer.updateFeature(feat)
                     projectedLayer.commitChanges()
 
@@ -1010,144 +938,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     QgsProject.instance().addMapLayer(projectedLayer)
                     projectedLayer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/{}".format(style)))
 
-                    """
-                    feats = []
-                    fid = 1
-                    for feat in poiFeatures:
-                        self.progress(1, 'poi')
-
-                        geom = QgsGeometry(feat.geometry())
-                        geom.transform(xPoi2Map)
-                        geom = geom.intersection(hull)
-                        try:
-                            geoms = [geom]
-                            for _, cutingLine in enumerate(
-                                self.mt.getLines()
-                            ):
-                                newGeoms = []
-                                for g in geoms:
-                                    _, rgeoms, _ = g.splitGeometry(cutingLine, True)
-                                    newGeoms = newGeoms + rgeoms
-
-                                geoms = geoms + newGeoms
-
-                            for geom in geoms:
-                                try:
-                                    fet = projLineString(feat, geom.asPolyline())
-                                    if fet is not None:
-                                        feats.append(fet)
-                                        fid = fid + 1
-                                except Exception:
-                                    collec = geom.asGeometryCollection()
-                                    for geom in collec:
-                                        fet = projLineString(feat, geom.asPolyline())
-                                        if fet is not None:
-                                            feats.append(fet)
-                                            fid = fid + 1
-                        except Exception as e:
-                            self.log("Err ds {} ligne {} ".format(
-                                inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
-                            )
-                            self.log(e)
-
-                    if len(feats) > 0:
-                        layer = QgsVectorLayer(
-                            "MultiLineString?crs={}".format(
-                                QgsProject.instance().crs().authid()
-                            ),
-                            "PROJ.",
-                            "memory",
-                        )
-                        QgsProject.instance().addMapLayer(layer)
-                        layer.startEditing()
-                        layer.dataProvider().addAttributes(
-                            poiLayer.dataProvider().fields().toList()
-                            + [
-                                QgsField("demslicer_num", QVariant.Int),
-                                QgsField("demslicer_visi", QVariant.Int),
-                                QgsField("demslicer_prof", QVariant.Int),
-                                QgsField("demslicer_log", QVariant.String)
-                            ]
-                        )
-                        layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
-                        layer.updateFields()
-
-                        layer.dataProvider().addFeatures(feats)
-                        layer.commitChanges()
-                        layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-line.qml"))
-                    """
-
-                """if (
-                    poiLayer.wkbType() == QgsWkbTypes.Polygon
-                    or poiLayer.wkbType() == QgsWkbTypes.PolygonZ
-                    or poiLayer.wkbType() == QgsWkbTypes.MultiPolygon
-                    or poiLayer.wkbType() == QgsWkbTypes.MultiPolygonZ
-                ):
-                    feats = []
-                    fid = 1
-                    for feat in poiFeatures:
-                        self.progress(1, 'poi')
-
-                        geom = QgsGeometry(feat.geometry())
-                        geom.transform(xPoi2Map)
-                        geom = geom.intersection(hull)
-                        try:
-                            geoms = [geom]
-                            for _, cutingLine in enumerate(
-                                self.mt.getLines()
-                            ):
-                                newGeoms = []
-                                for g in geoms:
-                                    _, rgeoms, _ = g.splitGeometry(cutingLine, True)
-                                    newGeoms = newGeoms + rgeoms
-
-                                geoms = geoms + newGeoms
-
-                            for geom in geoms:
-                                try:
-                                    fet = projPolygon(feat, geom.asPolygon())
-                                    if fet is not None:
-                                        feats.append(fet)
-                                        fid = fid + 1
-                                except Exception:
-                                    collec = geom.asGeometryCollection()
-                                    for geom in collec:
-                                        fet = projPolygon(feat, geom.asPolygon())
-                                        if fet is not None:
-                                            feats.append(fet)
-                                            fid = fid + 1
-                        except Exception as e:
-                            self.log("Err ds {} ligne {} ".format(
-                                inspect.stack()[0][3], inspect.currentframe().f_back.f_lineno)
-                            )
-                            self.log(e)
-
-                    if len(feats) > 0:
-                        layer = QgsVectorLayer(
-                            "Polygon?crs={}".format(QgsProject.instance().crs().authid()),
-                            "PROJ.",
-                            "memory",
-                        )
-                        QgsProject.instance().addMapLayer(layer)
-                        layer.startEditing()
-                        layer.dataProvider().addAttributes(
-                            poiLayer.dataProvider().fields().toList()
-                            + [
-                                QgsField("demslicer_num", QVariant.Int),
-                                QgsField("demslicer_visi", QVariant.Int),
-                                QgsField("demslicer_prof", QVariant.Int),
-                                QgsField("demslicer_log", QVariant.String)
-                            ]
-                        )
-                        layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
-                        layer.updateFields()
-
-                        layer.dataProvider().addFeatures(feats)
-                        sourceStyles = poiLayer.styleManager().mapLayerStyles()
-                        layer.styleManager().addStyle("poi", list(sourceStyles.values())[0])
-                        layer.commitChanges()
-                        layer.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/ornementation-polygon.qml"))
-                    """
         finally:
             self.setAlert("")
             self.progressBar.setValue(0)
