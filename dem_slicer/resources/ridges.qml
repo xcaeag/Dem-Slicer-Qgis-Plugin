@@ -1,8 +1,8 @@
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
-<qgis styleCategories="Symbology|Labeling" version="3.24.2-Tisler" labelsEnabled="0">
-  <renderer-v2 enableorderby="0" forceraster="0" symbollevels="0" referencescale="-1" type="singleSymbol">
+<qgis styleCategories="Symbology" version="3.24.1-Tisler">
+  <renderer-v2 symbollevels="0" enableorderby="0" forceraster="0" type="singleSymbol" referencescale="-1">
     <symbols>
-      <symbol clip_to_extent="1" alpha="1" name="0" type="line" force_rhr="0">
+      <symbol name="0" force_rhr="0" alpha="1" clip_to_extent="1" type="line">
         <data_defined_properties>
           <Option type="Map">
             <Option value="" name="name" type="QString"/>
@@ -10,7 +10,7 @@
             <Option value="collection" name="type" type="QString"/>
           </Option>
         </data_defined_properties>
-        <layer class="SimpleLine" locked="0" pass="0" enabled="1">
+        <layer locked="0" enabled="1" pass="0" class="SimpleLine">
           <Option type="Map">
             <Option value="0" name="align_dash_pattern" type="QString"/>
             <Option value="flat" name="capstyle" type="QString"/>
@@ -78,7 +78,7 @@
                 </Option>
                 <Option name="outlineWidth" type="Map">
                   <Option value="true" name="active" type="bool"/>
-                  <Option value="scale_linear(  coalesce( &quot;demslicer_gaz&quot;, maximum(&quot;demslicer_gaz&quot;)/2) , 1, maximum(&quot;demslicer_gaz&quot;), 0.01, 1)" name="expression" type="QString"/>
+                  <Option value="case &#xd;&#xa;&#x9;when &quot;demslicer_prof&quot; = maximum(&quot;demslicer_prof&quot;) then 0.02&#xd;&#xa;&#x9;else scale_linear(  coalesce( &quot;demslicer_gaz&quot;, maximum(&quot;demslicer_gaz&quot;)/2) , 1, maximum(&quot;demslicer_gaz&quot;), 0.01, 1)&#xd;&#xa;end" name="expression" type="QString"/>
                   <Option value="3" name="type" type="int"/>
                 </Option>
               </Option>

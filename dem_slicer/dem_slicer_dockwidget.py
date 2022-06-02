@@ -1315,7 +1315,7 @@ class MapTool(QgsMapTool):
         # thumbnails skylines - profil échantillon projeté
         self.rubbers['thumbnail'].setStrokeColor(QColor(200, 120, 70, 130))
         self.rubbers['thumbnail'].setWidth(1)
-        self.rubbers['R'].setStrokeColor(QColor(120, 70, 200, 200))
+        self.rubbers['R'].setStrokeColor(QColor(120, 110, 130, 200))
         # peak projection
         self.rubbers['peakProj'].setStrokeColor(QColor(255, 239, 15, 200))
         self.rubbers['peakProj'].setWidth(4)
@@ -1388,7 +1388,10 @@ class MapTool(QgsMapTool):
 
         self.hide()
 
-        # les poignées visibles : Y (obs), H, M, L ou K, B ou Z
+        self.azimuthLeft = self.azimuth('Y', 'D2')
+        self.azimuthRight = self.azimuth('Y', 'C2')
+        if self.azimuthRight < self.azimuthLeft:
+            self.azimuthRight = self.azimuthRight + 360
 
         self.segCD = self.geomPolyline(['C', 'D'])
         self.segAD = self.geomPolyline(['A', 'D'])
@@ -1508,7 +1511,7 @@ class MapTool(QgsMapTool):
                     pass
 
         # peak
-        if self.rubbers['box'].asGeometry().contains(self.pointXY('peak')):
+        if self.geomZone.contains(self.pointXY('peak')):
             proj = self.widget.getPeakGeom(self.pointXY('peak'))
             self.rubbers['peakProj'].setToGeometry(proj)
 
@@ -1637,14 +1640,12 @@ class MapTool(QgsMapTool):
                 # self.widget.log("mode "+p)
                 return
 
-        if self.rubbers['box'].asGeometry().contains(self.p0):
+        if self.geomZone.contains(self.p0):
             self.mode = 'box'
-            # self.widget.log("mode "+p)
             return
 
         if self.rubbers['thumbnail'].asGeometry().convexHull().contains(self.p0):
             self.mode = 'R'
-            # self.widget.log("mode "+p)
             return
 
     def move(self, pt, toMove, segOrPoint):
@@ -1856,11 +1857,6 @@ class MapTool(QgsMapTool):
         self.points['X'].setXY(self.milieu('A', 'C'))
         self.points['L'].setXY(self.milieu('B', 'C'))
 
-        self.azimuthLeft = self.azimuth('Y', 'D2')
-        self.azimuthRight = self.azimuth('Y', 'C2')
-        if self.azimuthRight < self.azimuthLeft:
-            self.azimuthRight = self.azimuthRight + 360
-
         self.updateRubberGeom()
 
     def canvasReleaseEvent(self, _):
@@ -1871,7 +1867,7 @@ class MapTool(QgsMapTool):
         self.mode = self.MODE_NONE
 
         # traces
-        self.widget.log("az:[{}..{}]".format(self.azimuthLeft, self.azimuthRight))
+        # self.widget.log("az:[{}..{}]".format(self.azimuthLeft, self.azimuthRight))
 
     def activate(self):
         pass
