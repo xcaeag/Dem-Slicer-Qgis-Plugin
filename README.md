@@ -129,13 +129,15 @@ The attributes carried by the geometries can be used to adjust styles. For examp
 
 ![ex1](dem_slicer/help/all.png)
 
-Il s'agit d'un outil simple de découpe (en tranches !) de Modèle numérique de terrain (MNT), pour dessiner de jolies cartes postales, à destination des amoureux de reliefs.
+Il s'agit d'un outil simple de découpe (en tranches !) de Modèle numérique de terrain (MNT), pour produire de belles images à destination des amoureux de reliefs.
 
-Le principe est de construire une série de profils d'altitudes (sous forme de lignes ou de polygones), de les juxtaposer pour donner l'illusion d'une vue 3D. Ici, pas de calcul de l'indice de réfraction atmosphérique, pas de prise en compte de la courbure terrestre... juste un peu de géométrie, et les styles font le reste. Les couches résultantes sont positionnées où bon vous semble, le système de coordonnées utilisé est celui de la carte.
+Le principe est de construire une série de profils d'altitudes (sous forme de lignes ou de polygones), de les juxtaposer pour donner l'illusion d'une vue 3D. Ici, pas de calcul de l'indice de réfraction atmosphérique, pas de prise en compte de la courbure terrestre... juste un peu de géométrie, et les styles font le reste. Les couches résultantes sont positionnées où bon vous semble, le système de coordonnées utilisé est celui de la carte (métrique).
 
-La vue 'perspective' par défaut propose un rendu plus proche de la réalité (par rapport aux versions précédentes). 
+La vue 'perspective' par défaut propose un rendu plus proche de la réalité (par rapport aux versions précédentes, et à la vue orthogonale).
 
 Un calcul de 'ligne de crête' rehausse les reliefs.
+
+La projection de points (sommets par exemple), de lignes (rivières ?), de polygones est vraiment une fonctionalité expérimentale (se méfier de la volumétrie).
 
 ## Les prérequis
 - disposer d'un image (raster) d'altitude (MNT). différentes sources possibles : https://dwtkns.com/srtm30m/, https://opendem.info, https://grindgis.com/data/free-world-dem-data
@@ -148,15 +150,15 @@ Choix de la zone (utilisation des poignées), sélection de la couche qui porte 
 
 ![Démo simple](dem_slicer/help/dem-demo-1.gif)
 
-### La vue radiale
-Les coupes suivent alors des arcs de cercle d'iso-distance à l'observateur.
+### La vue orthogonale
+TODO Les coupes suivent alors des arcs de cercle d'iso-distance à l'observateur.
 
-![Vue radiale](dem_slicer/help/dem-demo-2.gif)
+![Vue ortho](dem_slicer/help/dem-demo-2.gif)
 
 ### Ornementations
 
 La couche de points choisie sera 'projetée' sur les coupes. Un attribut indique si le point ainsi projeté est visible (masqué ou non par une coupe). Le style par défaut utilise les champs 'nom', 'name' ou 'label' pour étiquetage.
-Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet replacé en altitude. Résultat souvent mal fichu et très gourmant en temps. Attention : annulation impossible, faire des tests sur petit jeu de données.
+Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet de la géométrie replacé en altitude. Résultat souvent mal fichu et très gourmant en temps. Attention : annulation impossible, faire des tests sur petit jeu de données.
 
 ![P.O.I.](dem_slicer/help/dem-demo-3.gif)
 
