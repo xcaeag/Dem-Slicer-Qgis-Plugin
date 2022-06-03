@@ -602,24 +602,20 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         "memory",
                     )
                     hLayer.startEditing()
-
-                    hLayer.dataProvider().addAttributes(
-                        [QgsField("demslicer_prof", QVariant.Int)]
-                    )
-                    hLayer.dataProvider().addAttributes(
-                        [QgsField("demslicer_gaz", QVariant.Int)]
-                    )
+                    hLayer.dataProvider().addAttributes([
+                        QgsField("demslicer_prof", QVariant.Int),
+                        QgsField("demslicer_gaz", QVariant.Int)
+                    ])
                     hLayer.updateFields()
 
                     horizons = []
-
                     for lnum, linG in enumerate(aLines):
                         #  ("# lnum {}".format(lnum))
                         lin = QgsGeometry(linG)
-                        self.progress(2, 'ridge')
+                        # self.progress(2, 'ridge')
 
                         polyMax = None
-                        for _, poly in enumerate(aPolys[lnum+1:]):
+                        for poly in aPolys[lnum+1:]:
                             # if not poly.isGeosValid():
                             #    print("! {} invalid".format(pnum+lnum+1))
 
@@ -656,8 +652,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         self.progress(10, 'ridges')
                         # filtrer
                         self.setAlert(self.tr("build ridges 4/10"))
-                        filtered = tools.run("qgis:selectbyexpression", lineintersections, {'EXPRESSION': ' "demslicer_prof" <  "demslicer_prof_2" ', 'METHOD': 0})
-                        filtered = tools.run("native:saveselectedfeatures", filtered, {})
+                        filtered = tools.run("qgis:extractbyexpression", lineintersections, {'EXPRESSION': ' "demslicer_prof" <  "demslicer_prof_2" '})
                         tools.run("native:createspatialindex", filtered, {})
                         self.progress(10, 'ridges')
                         # générer des verticales pour découpage (expression) -> segments
@@ -689,12 +684,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                             ridges.updateFeature(f)
                         self.progress(10, 'ridges')
                         ridges.commitChanges()
-
-                        # filtrer
-                        self.setAlert(self.tr("build ridges 9/10"))
-                        ridges = tools.run("qgis:selectbyexpression", ridges, {'EXPRESSION': ' "demslicer_prof" > 1', 'METHOD': 0})
-                        ridges = tools.run("native:saveselectedfeatures", ridges, {})
-                        self.progress(10, 'ridges')
 
                         # collect (réduire le nb d'entités)
                         self.setAlert(self.tr("build ridges 10/10"))
