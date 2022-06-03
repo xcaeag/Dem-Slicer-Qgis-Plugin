@@ -396,7 +396,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         # projection
         self.projBox, polylineOut = self.getProjPolylines(dx, sample)
-        ymin = self.projBox.yMinimum()
+        ymin = self.projBox.yMaximum()
+        ymax = self.projBox.yMinimum()
 
         aLines = []
         aPolys = []
@@ -436,6 +437,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 point.setY(newY)
                 if newY < ymin:
                     ymin = newY
+                if newY > ymax:
+                    ymax = newY
 
             if sample or not self.toSmooth.isChecked():
                 aLines.append(lineOut)
@@ -455,6 +458,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 id = id + 1
 
             self.yMin = ymin
+            self.yMax = ymax
 
         if sample:
             # pas de copy necessaire
@@ -541,21 +545,44 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                 compass.startEditing()
                 feats = []
-                compass.dataProvider().addAttributes(
-                    [QgsField("demslicer_azimuth", QVariant.Double)]
-                )
+                compass.dataProvider().addAttributes([
+                    QgsField("demslicer_orientation", QVariant.String),
+                    QgsField("demslicer_azimuth", QVariant.Double)
+                ])
                 compass.updateFields()
                 for i, alpha in enumerate(range(round(self.mt.azimuthLeft), round(self.mt.azimuthRight))):
                     c = QgsPoint(
                         self.projBox.xMinimum() + (i*((self.projBox.xMaximum()-self.projBox.xMinimum())/(self.mt.azimuthRight-self.mt.azimuthLeft))),
                         self.yMin-self.base.value())
                     feature = QgsFeature()
-                    feature.setAttributes([alpha if alpha >= 0 else alpha+360])
+                    feature.setAttributes(['H', alpha if alpha >= 0 else alpha+360])
+                    feature.setGeometry(c)
+                    feats.append(feature)
+
+                # verticalement
+                yMinNewZ = (self.yMin - self.mt.y('R')) / self.zFactor.value()
+                # h = newZ si depth = horizon
+                alphaBas = math.degrees(math.atan(yMinNewZ / self.mt.horizon))
+
+                yMaxNewZ = (self.yMax - self.mt.y('R')) / self.zFactor.value()
+                alphaHaut = math.degrees(math.atan(yMaxNewZ / self.mt.horizon))
+                # self.log("{} {}".format(alphaBas, alphaHaut))
+
+                for i, alpha in enumerate(range(round(alphaBas), round(alphaHaut))):
+                    h = self.mt.y('R')+self.zFactor.value()*(self.mt.horizon*math.tan(math.radians(alpha)))
+                    c = QgsPoint(
+                        self.projBox.xMinimum(),
+                        h
+                    )
+                    feature = QgsFeature()
+                    feature.setAttributes(['V', alpha])
                     feature.setGeometry(c)
                     feats.append(feature)
 
                 compass.dataProvider().addFeatures(feats)
                 compass.commitChanges()
+
+                # TODO : grid
 
                 QgsProject.instance().addMapLayer(compass)
                 compass.loadNamedStyle(str(DIR_PLUGIN_ROOT / "resources/compass.qml"))
