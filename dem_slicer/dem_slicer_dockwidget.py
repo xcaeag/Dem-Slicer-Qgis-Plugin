@@ -20,9 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-TODO : compass : [0-360]
-TODO : fix lines projection 
-TODO : projection optimization
+TODO : compass : grid
+TODO : supprimer zshift si perspective
 """
 
 import os
@@ -209,6 +208,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         for w in self.widget2Enable:
             w.setEnabled(True)
         self.renderCompass.setEnabled(not self.parallelView.isChecked())
+        self.zShift.setEnabled(self.parallelView.isChecked())
 
         self.canvas.setMapTool(self.mt)
 
@@ -280,15 +280,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         :return: new projected z
         """
         # Altitude de la cible par rapport à l'observateur
-        if self.parallelView.isChecked():
-            z = self.elevation.value()
-            # alpha = math.atan(z / depth)
-            # dh = (depth - self.mt.d0) * math.tan(alpha)
-            dh = (depth - self.mt.d0) * ((z+self.altY) / (self.mt.zoneDepth))
-            return zTarget + dh
-        else:
-            h = zTarget - self.elevation.value() - self.altY
-            return h * ((self.mt.horizon) / depth)
+        h = zTarget - self.elevation.value() - self.altY
+        return h * ((self.mt.horizon) / depth)
 
     def getProf(self, depth):
         # distance entre deux profils
@@ -304,11 +297,17 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             if self.parallelView.isChecked() else self.mt.pointXY('Y').distance(pt)
         newZ = self.getNewZ(alti, d)
         zf = self.zFactor.value()
-        newY = (
-            self.mt.y('R')
-            + (newZ * zf)
-            + (d * self.zShift.value() / self.mt.zoneDepth)
-        )
+        if self.parallelView.isChecked():
+            newY = (
+                self.mt.y('R')
+                + (newZ * zf)
+                + (d * self.zShift.value() / self.mt.zoneDepth)
+            )
+        else:
+            newY = (
+                self.mt.y('R')
+                + (newZ * zf)
+            )
 
         # new X'
         if self.parallelView.isChecked():
@@ -432,7 +431,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 newY = (
                     self.mt.y('R')
                     + (newZ * zf)
-                    + (d * self.zShift.value() / self.mt.zoneDepth)
+                    + ((d * self.zShift.value() / self.mt.zoneDepth) if self.parallelView.isChecked() else 0)
                 )
                 point.setY(newY)
                 if newY < ymin:
@@ -1002,6 +1001,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def on_parallelView_stateChanged(self, v):
         self.renderCompass.setEnabled(not self.parallelView.isChecked())
+        self.zShift.setEnabled(self.parallelView.isChecked())
         self.mt.updateRubberGeom()
 
     def on_btnBuild_released(self):

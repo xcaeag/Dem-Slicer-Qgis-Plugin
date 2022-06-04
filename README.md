@@ -9,14 +9,30 @@ Attention : doc for v0.1. Adaptations are coming soon !
 - [D.E.M. Slicer (en)](#dem-slicer-en)
   - [Prerequisites](#prerequisites)
   - [Examples](#examples)
+    - [Basic use](#basic-use)
+    - [Orthogonal view](#orthogonal-view)
+    - [Ornementations](#ornementations)
   - [The layers produced](#the-layers-produced)
+    - [Lines](#lines)
+    - [Polygons](#polygons)
+    - [Ridges](#ridges)
+    - [Ornementation (points)](#ornementation-points)
+    - [Compass](#compass)
   - [The parameters in detail](#the-parameters-in-detail)
   - [The styles](#the-styles)
 - [D.E.M. Slicer (fr)](#dem-slicer-fr)
-  - [Les prérequis](#les-pr%c3%a9requis)
+  - [Les prérequis](#les-prérequis)
   - [Exemples](#exemples)
+    - [Un fonctionnement basique.](#un-fonctionnement-basique)
+    - [La vue orthogonale](#la-vue-orthogonale)
+    - [Ornementations](#ornementations-1)
   - [Les couches produites](#les-couches-produites)
-  - [Les paramètres en détail](#les-param%c3%a8tres-en-d%c3%a9tail)
+    - [Lignes](#lignes)
+    - [Polygones](#polygones)
+    - [Crêtes](#crêtes)
+    - [Ornementation (points)](#ornementation-points-1)
+    - [Boussole](#boussole)
+  - [Les paramètres en détail](#les-paramètres-en-détail)
   - [Les styles](#les-styles)
 
 
@@ -38,14 +54,15 @@ A 'ridge line' calculation enhances the reliefs.
 ## Examples
 
 ### Basic use
-Choice of the zone (use of the handles), selection of the layer which carries the altitudes, adjustment of some parameters and results  :
+Choice of the zone (use of the handles), selection of the layer which carries the altitudes, adjustment of some parameters and results.
+
+Default view : the profiles follow arcs of an iso-distance to the observer.
 
 ![Basic use](dem_slicer/help/dem-demo-1.gif)
 
-### The radial view
-The profiles then follow arcs of an iso-distance to the observer.
+### Orthogonal view
 
-![Vue radiale](dem_slicer/help/dem-demo-2.gif)
+![Vue ortho](dem_slicer/help/dem-demo-2.gif)
 
 ### Ornementations
 
@@ -60,33 +77,35 @@ A line layer or polygons will be cut by the profile lines, each vertex replaced 
 ### Lines
 Attributes :
 
-    "num" - line number. Zero starting at the bottom.
+    "demslicer_num" - line number. Zero starting at the bottom.
 
 ![layer line](dem_slicer/help/ex_line.png)
 
 ### Polygons
 Attributes :
 
-    "num" - polygone number.
+    "demslicer_num" - polygone number.
 
 ![layer polygon](dem_slicer/help/ex_poly.png)
 
 ### Ridges
 Attributes :
 
-    "num" - line number.
-    "gaz" - number of profiles that this crest hides
-    "prof" - 'depth' of the ridge (0 = close...)
+    "demslicer_num" - line number.
+    "demslicer_gaz" - number of profiles that this crest hides
+    "demslicer_prof" - 'depth' of the ridge (0 = close...)
 
 ![layer ridge](dem_slicer/help/ex_ridge.png)
 
 ### Ornementation (points)
 Attributes (added to the attributes of the original layer) :
 
-    "num" - point number.
-    "z" - calculated altitude.  
-    "depth" - distance to observer
-    "visi" - visibility in the cutting series (0: hidden, 1: visible)
+    "demslicer_num" - point number.
+    "demslicer_z" - calculated altitude.  
+    "demslicer_depth" - distance to observer
+    "demslicer_visi" - visibility in the cutting series (0: hidden, 1: visible)
+
+### Compass 
 
 ## The parameters in detail
 
@@ -167,35 +186,37 @@ Une couche de ligne ou polygones sera découpée par les lignes de profils, chaq
 ### Lignes
 Attributs :
 
-    "num" - numéro de la ligne. Le zéro commençant au fond.
+    "demslicer_num" - numéro de la ligne. Le zéro commençant au fond.
 
 ![layer line](dem_slicer/help/ex_line.png)
 
 ### Polygones
 Attributs :
 
-    "num" - numéro du polygone. Le zéro commençant au fond.
+    "demslicer_num" - numéro du polygone. Le zéro commençant au fond.
 
 ![layer polygon](dem_slicer/help/ex_poly.png)
 
 ### Crêtes
 Attributs :
 
-    "num" - numéro de la ligne.
-    "gaz" - nombre de profils que cette crête cache.
-    "prof" - 'profondeur' de la crête (0 = proche...)
+    "demslicer_num" - numéro de la ligne.
+    "demslicer_gaz" - nombre de profils que cette crête cache.
+    "demslicer_prof" - 'profondeur' de la crête (0 = proche...)
 
 ![layer ridge](dem_slicer/help/ex_ridge.png)
 
 ### Ornementation (points)
 Attributs (ajoutés aux attributs de la couche originale) :
 
-    "num" - numéro du point.
-    "z" - altitude calculée.  
-    "depth" - distance à l'observateur
-    "visi" - visibilité dans la série de coupe (0 : masqué, 1 : visible)
+    "demslicer_num" - numéro du point.
+    "demslicer_z" - altitude calculée.  
+    "demslicer_depth" - distance à l'observateur
+    "demslicer_visi" - visibilité dans la série de coupe (0 : masqué, 1 : visible)
 
 ![layer POI](dem_slicer/help/ex_ornement.png)
+
+### Boussole
 
 ## Les paramètres en détail
 
