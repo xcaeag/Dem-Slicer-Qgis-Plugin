@@ -21,7 +21,8 @@
  ***************************************************************************/
 
 TODO : compass : grid
-TODO : supprimer zshift si perspective
+TODO : azimuth en mode ortho
+TODO : attributs : remplacer num+prof par cutid
 """
 
 import os
@@ -343,7 +344,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def buildLayer(self, layer, aLinesOrPolys):
         layer.startEditing()
         layer.dataProvider().addAttributes(
-            [QgsField("demslicer_num", QVariant.Int)]
+            [QgsField("demslicer_cutid", QVariant.Int)]
         )
         layer.updateFields()
         feats = []
@@ -386,7 +387,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     "memory",
                 )
                 vSource.startEditing()
-                vSource.dataProvider().addAttributes([QgsField("demslicer_id", QVariant.Int), QgsField("demslicer_z", QVariant.Int)])
+                vSource.dataProvider().addAttributes([QgsField("demslicer_cutid", QVariant.Int), QgsField("demslicer_z", QVariant.Int)])
                 vSource.updateFields()
                 feats = []
 
@@ -451,7 +452,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     newF = QgsFeature()
                     newF.setGeometry(newG)
                     newF.setFields(vSource.fields())
-                    newF.setAttribute("demslicer_id", id)
+                    newF.setAttribute("demslicer_cutid", id)
                     newF.setAttribute("demslicer_z", z)
                     feats.append(newF)
                 id = id + 1
@@ -478,7 +479,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 newF = QgsFeature()
                 newF.setGeometry(newG)
                 newF.setFields(vSource.fields())
-                newF.setAttribute("demslicer_id", -1)
+                newF.setAttribute("demslicer_cutid", -1)
                 newF.setAttribute("demslicer_z", self.getElevation(self.xMap2Raster.transform(self.mt.points['Y'].x(), self.mt.points['Y'].y())))
                 feats.append(newF)
 
@@ -629,7 +630,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     )
                     hLayer.startEditing()
                     hLayer.dataProvider().addAttributes([
-                        QgsField("demslicer_prof", QVariant.Int),
+                        QgsField("demslicer_cutid", QVariant.Int),
                         QgsField("demslicer_gaz", QVariant.Int)
                     ])
                     hLayer.updateFields()
@@ -678,7 +679,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         self.progress(10, 'ridges')
                         # filtrer
                         self.setAlert(self.tr("build ridges 4/10"))
-                        filtered = tools.run("qgis:extractbyexpression", lineintersections, {'EXPRESSION': ' "demslicer_prof" <  "demslicer_prof_2" '})
+                        filtered = tools.run("qgis:extractbyexpression", lineintersections, {'EXPRESSION': ' "demslicer_cutid" <  "demslicer_cutid_2" '})
                         tools.run("native:createspatialindex", filtered, {})
                         self.progress(10, 'ridges')
                         # générer des verticales pour découpage (expression) -> segments
@@ -705,7 +706,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         self.setAlert(self.tr("build ridges 8/10"))
                         ridges.startEditing()
                         for f in ridges.getFeatures():
-                            gz = self.getGaz(f.geometry().centroid(), aPolys, f["demslicer_prof"])
+                            gz = self.getGaz(f.geometry().centroid(), aPolys, f["demslicer_cutid"])
                             f["demslicer_gaz"] = gz
                             ridges.updateFeature(f)
                         self.progress(10, 'ridges')
@@ -714,7 +715,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         # collect (réduire le nb d'entités)
                         self.setAlert(self.tr("build ridges 10/10"))
                         ridges = tools.run(
-                            "native:collect", ridges, {'FIELD': ['demslicer_prof', 'demslicer_gaz']}, name="ridges"
+                            "native:collect", ridges, {'FIELD': ['demslicer_cutid', 'demslicer_gaz']}, name="ridges"
                         )
                         tools.run("native:createspatialindex", ridges, {})
                         self.progress(10, 'ridges')
@@ -745,7 +746,6 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     or poiLayer.wkbType() == QgsWkbTypes.MultiPointZ
                 ):
                     feats = []
-                    fid = 1
                     for feat in poiFeatures:
                         self.progress(1, 'poi')
 
@@ -762,18 +762,17 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 QgsPointXY(poiPointXY.x(), poiPointXY.y()), z
                             )
                             if self.parallelView.isChecked():
-                                azimuth = 0
+                                azimuth = self.mt.azimuth('Y', 'M')
                             else:
                                 azimuth = self.mt.pointXY('Y').azimuth(poiPointXY)
                             
                             pt = QgsGeometry.fromPointXY(QgsPointXY(newX, newY))
                             visi, _ = self.getVisibility(pt, aPolys, prof)
-                            fet0 = QgsFeature(fid)
+                            fet0 = QgsFeature()
                             fet0.setAttributes(
                                 feat.attributes()
-                                + [str(fid), int(prof)+1, z, depth, visi, azimuth]
+                                + [int(prof)+1, z, depth, visi, azimuth]
                             )
-                            fid = fid + 1
                             fet0.setGeometry(pt)
                             feats.append(fet0)
 
@@ -790,16 +789,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         layer.dataProvider().addAttributes(
                             poiLayer.dataProvider().fields().toList()
                             + [
-                                QgsField("demslicer_num", QVariant.Int),
-                                QgsField("demslicer_prof", QVariant.Int),
+                                QgsField("demslicer_cutid", QVariant.Int),
                                 QgsField("demslicer_z", QVariant.Int),
-                                QgsField(
-                                    "demslicer_depth", QVariant.Double, "double", 4, 1
-                                ),
+                                QgsField("demslicer_dist", QVariant.Double, "double", 4, 1),
                                 QgsField("demslicer_visi", QVariant.Int),
-                                QgsField(
-                                    "demslicer_azimuth", QVariant.Double, "double", 4, 1
-                                ),
+                                QgsField("demslicer_azimuth", QVariant.Double, "double", 4, 1),
                             ]
                         )
                         layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
@@ -852,7 +846,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     poiZLayer = tools.run("native:multiparttosingleparts", poiZLayer)
                     poiZLayer.dataProvider().addAttributes([
                             QgsField("demslicer_visi", QVariant.Int),
-                            QgsField("demslicer_prof", QVariant.Int),
+                            QgsField("demslicer_cutid", QVariant.Int),
                             # QgsField("demslicer_log", QVariant.String)
                         ]
                     )
@@ -864,7 +858,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     poiZLayer.startEditing()
                     for feat in poiZLayer.getFeatures():
                         depth = self.mt.pointXY('Y').distance(feat.geometry().centroid().asPoint())
-                        feat['demslicer_prof'] = int(self.getProf(depth))+1
+                        feat['demslicer_cutid'] = int(self.getProf(depth))+1
                         poiZLayer.updateFeature(feat)
                     poiZLayer.commitChanges()
 
@@ -940,7 +934,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     # calculer visibilité
                     projectedLayer.startEditing()
                     for feat in projectedLayer.getFeatures():
-                        visi, _ = self.getVisibility(feat.geometry().centroid(), aPolys, feat['demslicer_prof'])
+                        visi, _ = self.getVisibility(feat.geometry().centroid(), aPolys, feat['demslicer_cutid'])
                         feat['demslicer_visi'] = visi
                         # feat['demslicer_log'] = log
                         projectedLayer.updateFeature(feat)

@@ -24,6 +24,7 @@ Attention : doc for v0.1. Adaptations are coming soon !
   - [Les prérequis](#les-prérequis)
   - [Exemples](#exemples)
     - [Un fonctionnement basique.](#un-fonctionnement-basique)
+    - [Ergonomie](#ergonomie)
     - [La vue orthogonale](#la-vue-orthogonale)
     - [Ornementations](#ornementations-1)
   - [Les couches produites](#les-couches-produites)
@@ -91,7 +92,6 @@ Attributes :
 ### Ridges
 Attributes :
 
-    "demslicer_num" - line number.
     "demslicer_gaz" - number of profiles that this crest hides
     "demslicer_prof" - 'depth' of the ridge (0 = close...)
 
@@ -104,6 +104,8 @@ Attributes (added to the attributes of the original layer) :
     "demslicer_z" - calculated altitude.  
     "demslicer_depth" - distance to observer
     "demslicer_visi" - visibility in the cutting series (0: hidden, 1: visible)
+    "demslicer_prof" - 
+    "demslicer_azimuth" - azimuth from observer
 
 ### Compass 
 
@@ -169,15 +171,25 @@ Choix de la zone (utilisation des poignées), sélection de la couche qui porte 
 
 ![Démo simple](dem_slicer/help/dem-demo-1.gif)
 
+### Ergonomie
+
+Les différentes poignées permettent de dimensionner, positionner les coupes et le rendu final.
+
+Les profils "échantillons" se dessinent immédiatement.
+
+![ergonomie-fr](dem_slicer/help/ergonomie-fr.png)
+
+
 ### La vue orthogonale
-TODO Les coupes suivent alors des arcs de cercle d'iso-distance à l'observateur.
+Les coupes suivent alors des lignes droites, l'observateur n'est plus le "point bleu" mais se déplace latéralement. Les options de décalage des profils peuvent simuler une prise d'altitude.
 
 ![Vue ortho](dem_slicer/help/dem-demo-2.gif)
 
 ### Ornementations
 
-La couche de points choisie sera 'projetée' sur les coupes. Un attribut indique si le point ainsi projeté est visible (masqué ou non par une coupe). Le style par défaut utilise les champs 'nom', 'name' ou 'label' pour étiquetage.
-Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet de la géométrie replacé en altitude. Résultat souvent mal fichu et très gourmant en temps. Attention : annulation impossible, faire des tests sur petit jeu de données.
+La couche de points choisie sera 'projetée' sur les coupes. Un attribut indique si le point ainsi projeté est masqué ou non par une coupe. Le style par défaut utilise les champs 'nom', 'name' ou 'label' pour étiquetage.
+
+Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet de la géométrie replacé en altitude. Résultat souvent imparfait. Attention : annulation impossible, faire des tests sur petit jeu de données.
 
 ![P.O.I.](dem_slicer/help/dem-demo-3.gif)
 
@@ -200,7 +212,6 @@ Attributs :
 ### Crêtes
 Attributs :
 
-    "demslicer_num" - numéro de la ligne.
     "demslicer_gaz" - nombre de profils que cette crête cache.
     "demslicer_prof" - 'profondeur' de la crête (0 = proche...)
 
