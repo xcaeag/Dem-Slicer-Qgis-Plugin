@@ -21,7 +21,7 @@
  ***************************************************************************/
 
 TODO : compass : grid
-TODO : azimuth en mode ortho
+TODO : poi - azimuth en mode ortho
 TODO : attributs : remplacer num+prof par cutid
 """
 
@@ -405,7 +405,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         # search for Z values
         # print("finalw:{} dx:{} - {} polylineIn, {} polylineOut".format(self.mt.finalWidth, dx, len(polylineIn), len(polylineOut)))
-        id = 0
+        id = self.lineCount.value()-1
         for lineIn, lineOut in zip(polylineIn, polylineOut):
             ds, zs = map(
                 list,
@@ -455,7 +455,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     newF.setAttribute("demslicer_cutid", id)
                     newF.setAttribute("demslicer_z", z)
                     feats.append(newF)
-                id = id + 1
+                id = id - 1
 
             self.yMin = ymin
             self.yMax = ymax
