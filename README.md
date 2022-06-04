@@ -4,12 +4,11 @@
 
 a QGis (3.10) plugin...
 
-Attention : doc for v0.1. Adaptations are coming soon !
-
 - [D.E.M. Slicer (en)](#dem-slicer-en)
   - [Prerequisites](#prerequisites)
   - [Examples](#examples)
     - [Basic use](#basic-use)
+    - [Ergonomics](#ergonomics)
     - [Orthogonal view](#orthogonal-view)
     - [Ornementations](#ornementations)
   - [The layers produced](#the-layers-produced)
@@ -61,6 +60,14 @@ Default view : the profiles follow arcs of an iso-distance to the observer.
 
 ![Basic use](dem_slicer/help/dem-demo-1.gif)
 
+### Ergonomics
+
+The different handles allow you to size, position the cuts and the final rendering.
+
+The "sample" profiles are drawn immediately.
+
+![ergonomie-fr](dem_slicer/help/ergonomie-en.png)
+
 ### Orthogonal view
 
 ![Vue ortho](dem_slicer/help/dem-demo-2.gif)
@@ -78,14 +85,14 @@ A line layer or polygons will be cut by the profile lines, each vertex replaced 
 ### Lines
 Attributes :
 
-    "demslicer_num" - line number. Zero starting at the bottom.
+    "demslicer_cutid" - line number. Zero from the front.
 
 ![layer line](dem_slicer/help/ex_line.png)
 
 ### Polygons
 Attributes :
 
-    "demslicer_num" - polygone number.
+    "demslicer_cutid" - polygone number.
 
 ![layer polygon](dem_slicer/help/ex_poly.png)
 
@@ -93,21 +100,26 @@ Attributes :
 Attributes :
 
     "demslicer_gaz" - number of profiles that this crest hides
-    "demslicer_prof" - 'depth' of the ridge (0 = close...)
+    "demslicer_cutid" - 'depth' of the ridge (0 = front...)
 
 ![layer ridge](dem_slicer/help/ex_ridge.png)
 
 ### Ornementation (points)
 Attributes (added to the attributes of the original layer) :
 
-    "demslicer_num" - point number.
+    "demslicer_cutid" - depth.
     "demslicer_z" - calculated altitude.  
-    "demslicer_depth" - distance to observer
-    "demslicer_visi" - visibility in the cutting series (0: hidden, 1: visible)
-    "demslicer_prof" - 
+    "demslicer_dist" - distance to observer
+    "demslicer_visi" - visibility in the cutting series (< 1: hidden, 1: visible)
     "demslicer_azimuth" - azimuth from observer
 
+![layer POI](dem_slicer/help/ex_ornement.png)
+
 ### Compass 
+
+In perspective mode, possibility of producing a 'compass' layer to help localization, azimuth in x, angle of sight in relation to the horizontal in y.
+
+![boussole](dem_slicer/help/compass.png)
 
 ## The parameters in detail
 
@@ -119,7 +131,7 @@ xStep : distance between two altitude measurements, along the profiles.
 
 ![xstep](dem_slicer/help/dem-demo-xstep.gif)
 
-zShift : vertical offset of the profiles. Makes the cuts in the background more visible. 'Aerial view' effect.
+zShift : vertical offset of the profiles. Makes the cuts in the background more visible. 'Aerial view' effect (orthogonal mode only).
 
 ![zshift](dem_slicer/help/dem-demo-zshift.gif)
 
@@ -135,11 +147,9 @@ elevation : Altitude of the observer relative to the ground. Like 'zShift', infl
 
 Colors, transparency, texture ... everything is possible with QGis!
 
-The attributes carried by the geometries can be used to adjust styles. For example, the thickness of the ridge lines can vary depending on the number of profiles that are hidden by the ridge (attribute 'gaz') :
+The attributes carried by the geometries can be used to adjust styles. For example, the thickness of the ridge lines can vary depending on the number of profiles that are hidden by the ridge (attribute 'demslicer_gaz') :
 
-    scale_linear( coalesce( "gaz", maximum("gaz")/3) , 0, maximum("gaz"), 0.05, 0.8)
-
-![style line](dem_slicer/help/ex_line.png)
+    scale_linear( coalesce( "demslicer_gaz", maximum("demslicer_gaz")/3) , 0, maximum("demslicer_gaz"), 0.05, 0.8)
 
 ![style polygon](dem_slicer/help/ex_polygon.png)
 
@@ -198,14 +208,14 @@ Une couche de ligne ou polygones sera découpée par les lignes de profils, chaq
 ### Lignes
 Attributs :
 
-    "demslicer_num" - numéro de la ligne. Le zéro commençant au fond.
+    "demslicer_cutid" - numéro de ligne (profondeur), le zéro plus proche de l'observateur.
 
 ![layer line](dem_slicer/help/ex_line.png)
 
 ### Polygones
 Attributs :
 
-    "demslicer_num" - numéro du polygone. Le zéro commençant au fond.
+    "demslicer_cutid" - numéro du polygone (profondeur), le zéro plus proche de l'observateur.
 
 ![layer polygon](dem_slicer/help/ex_poly.png)
 
@@ -213,21 +223,26 @@ Attributs :
 Attributs :
 
     "demslicer_gaz" - nombre de profils que cette crête cache.
-    "demslicer_prof" - 'profondeur' de la crête (0 = proche...)
+    "demslicer_cutid" - 'profondeur' de la crête (0 = proche...)
 
 ![layer ridge](dem_slicer/help/ex_ridge.png)
 
 ### Ornementation (points)
 Attributs (ajoutés aux attributs de la couche originale) :
 
-    "demslicer_num" - numéro du point.
+    "demslicer_cutid" - 'profondeur' de la crête (0 = proche...)
     "demslicer_z" - altitude calculée.  
-    "demslicer_depth" - distance à l'observateur
-    "demslicer_visi" - visibilité dans la série de coupe (0 : masqué, 1 : visible)
+    "demslicer_dist" - distance de l'observateur au point
+    "demslicer_visi" - visibilité dans la série de coupe (< 1 : masqué, 1 : visible)
+    "demslicer_azimuth"  - azimuth du point (visée à la boussole du point)
 
 ![layer POI](dem_slicer/help/ex_ornement.png)
 
 ### Boussole
+
+En mode perspective, possibilité de produire une couche 'boussole' d'aide à la localisation, azimuth en x, angle de visée par rapport à l'horizontale en y.
+
+![boussole](dem_slicer/help/compass.png)
 
 ## Les paramètres en détail
 
@@ -239,7 +254,7 @@ Ecart entre deux mesures d'altitude : distance entre deux points, le long des pr
 
 ![xstep](dem_slicer/help/dem-demo-xstep.gif)
 
-Décalage des profils : décalage vertical des coupes. Rend plus visible les coupes qui sont en arrière plan. Effet 'vue aérienne'.
+Décalage des profils : décalage vertical des coupes. Rend plus visible les coupes qui sont en arrière plan. Effet 'vue aérienne', en mode orthogonal.
 
 ![zshift](dem_slicer/help/dem-demo-zshift.gif)
 
@@ -255,6 +270,6 @@ Obs : Altitude de l'observateur par rapport au sol. Comme le 'décalage en z', i
 
 Couleurs, transparence, texture... tout est possible avec QGis !
 
-Les attributs que portent les géométries peuvent servir à ajuster les styles. Par exemple, l'épaisseur des lignes de crête peut varier selon le nombre de profils qui sont cachés par la crête (attribut 'gaz') :
+Les attributs que portent les géométries peuvent servir à ajuster les styles. Par exemple, l'épaisseur des lignes de crête peut varier selon le nombre de profils qui sont cachés par la crête (attribut 'demslicer_gaz') :
 
-    scale_linear( coalesce( "gaz", maximum("gaz")/3) , 0, maximum("gaz"), 0.05, 0.8)
+    scale_linear( coalesce( "demslicer_gaz", maximum("demslicer_gaz")/3) , 0, maximum("demslicer_gaz"), 0.05, 0.8)
