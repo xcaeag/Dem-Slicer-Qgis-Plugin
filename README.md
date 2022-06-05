@@ -139,9 +139,13 @@ zFactor : accentuation of the relief.
 
 ![zfactor](dem_slicer/help/dem-demo-zfactor.gif)
 
-elevation : Altitude of the observer relative to the ground. Like 'zShift', influences the vertical offset of the sections, more faithful to reality.
+elevation : Altitude of the observer relative to the ground. Like 'zShift', influences the vertical offset of the sections, more faithful to reality in orthogonal mode.
 
 ![elevation](dem_slicer/help/dem-demo-elevation.gif)
+
+Base height.
+
+![elevation](dem_slicer/help/dem-demo-base.gif)
 
 ## The styles
 
@@ -262,9 +266,15 @@ Accentuation du relief : Exagération du relief (multiplication).
 
 ![zfactor](dem_slicer/help/dem-demo-zfactor.gif)
 
-Obs : Altitude de l'observateur par rapport au sol. Comme le 'décalage en z', influ sur le décalage vertical des coupes, en plus fidèle à la réalité.
+Obs : Altitude de l'observateur par rapport au sol. 
+En mode orthogonal, un décalage vertical des coupes, selon la distance à l'observateur simule la prise d'altitude.
 
 ![elevation](dem_slicer/help/dem-demo-elevation.gif)
+
+Base : hauteur de la 'jupe'.
+
+![elevation](dem_slicer/help/dem-demo-base.gif)
+
 
 ## Les styles
 
