@@ -315,8 +315,8 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             newX = self.mt.x('R') + self.mt.segAD.distance(QgsGeometry.fromPointXY(pt))
         else:
             aPeak = self.mt.pointXY('Y').azimuth(pt)
-            # if aPeak < self.mt.azimuthLeft:
-            #    aPeak = aPeak + 360
+            if aPeak < self.mt.azimuthLeft:
+                aPeak = aPeak + 360
             newX = self.mt.x('R') + ((aPeak-self.mt.azimuthLeft)/(self.mt.azimuthRight-self.mt.azimuthLeft))*self.mt.finalWidth
 
         return newX, newY
@@ -490,6 +490,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def progress(self, n, s):
         self.progressBar.setValue(self.progressBar.value()+n)
+        QApplication.processEvents()
         # self.log("progress {} : {}".format(s, self.progressBar.value()))
 
     def buildSlices(self):
@@ -816,6 +817,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     or poiLayer.wkbType() == QgsWkbTypes.MultiPolygonZ
                 ):
                     # couche "zone"
+                    self.setAlert(self.tr("projection 1/10"))
                     lZone = QgsVectorLayer("Polygon?crs={}".format(QgsProject.instance().crs().authid()), "lzone", "memory")
                     lZone.startEditing()
                     fetZone = QgsFeature()
@@ -835,14 +837,18 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     # QgsProject.instance().addMapLayer(lCut)
 
                     # cliper (emprise zone)
+                    self.setAlert(self.tr("projection 2/10"))
                     poiZLayer = tools.run("native:clip", poiLayer, {'OVERLAY': lZone})
 
+                    self.setAlert(self.tr("projection 3/10"))
                     poiZLayer = tools.run("native:reprojectlayer", poiZLayer,
                         {'TARGET_CRS': QgsCoordinateReferenceSystem("{}".format(QgsProject.instance().crs().authid()))}
                     )
 
                     # découper couche d'habillage par les lignes sources
+                    self.setAlert(self.tr("projection 4/10"))
                     poiZLayer = tools.run("native:splitwithlines", poiZLayer, {'LINES': lCut})
+                    self.setAlert(self.tr("projection 5/10"))
                     poiZLayer = tools.run("native:multiparttosingleparts", poiZLayer)
                     poiZLayer.dataProvider().addAttributes([
                             QgsField("demslicer_visi", QVariant.Int),
@@ -855,6 +861,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     # QgsProject.instance().addMapLayer(poiZLayer)
 
                     # affecter une profondeur à chaque entité
+                    self.setAlert(self.tr("projection 6/10"))
                     poiZLayer.startEditing()
                     for feat in poiZLayer.getFeatures():
                         depth = self.mt.pointXY('Y').distance(feat.geometry().centroid().asPoint())
@@ -863,9 +870,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     poiZLayer.commitChanges()
 
                     # récupérer alti (valeur m)
+                    self.setAlert(self.tr("projection 7/10"))
                     poiZLayer = tools.run("native:setmfromraster", poiZLayer, {'RASTER': self.mntLayer, 'BAND': 1, 'NODATA': 0, 'SCALE': 1})
                     # QgsProject.instance().addMapLayer(poiZLayer)
 
+                    self.setAlert(self.tr("projection 8/10"))
                     finalType = QgsWkbTypes.MultiLineString
                     gType = "MultiLineString"
                     style = "ornementation-line.qml"
@@ -885,6 +894,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         "memory"
                     )
 
+                    self.setAlert(self.tr("projection 9/10"))
                     projectedLayer.startEditing()
                     projectedLayer.dataProvider().addAttributes(poiZLayer.fields())
                     feats = []
@@ -932,6 +942,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     # projectedLayer = tools.run("native:splitwithlines", projectedLayer, {'LINES': projectedLineslayer})
 
                     # calculer visibilité
+                    self.setAlert(self.tr("projection 10/10"))
                     projectedLayer.startEditing()
                     for feat in projectedLayer.getFeatures():
                         visi, _ = self.getVisibility(feat.geometry().centroid(), aPolys, feat['demslicer_cutid'])
