@@ -20,7 +20,8 @@ repository=https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog=0.4 improved ergonomics
+changelog=0.4.1 fix POI shift
+    0.4 improved ergonomics
     0.3 better handling of perspective mode
     0.1 beginnings
 

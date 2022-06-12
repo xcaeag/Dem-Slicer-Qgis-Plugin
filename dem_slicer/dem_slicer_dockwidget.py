@@ -86,6 +86,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.canvas = self.plugin.iface.mapCanvas()
         self.started = False
         self.btnStart.setCheckable(True)
+
         self.mt = MapTool(self)
 
         locale = QSettings().value("locale/userLocale")[0:2]
@@ -1028,6 +1029,9 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         except Exception:
             pass
 
+    def on_btnHelp_released(self):
+        tools.showPluginHelp(filename="./help/index")
+
     def on_btnSave_released(self):
         fileName, _ = QFileDialog.getSaveFileName(
             self, self.tr("Save parameters"), "", self.tr("Ini files (*.ini)")
@@ -1096,19 +1100,19 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.zShift.setValue(float(s.value("dem_slicer/zShift")))
             self.zFactor.setValue(float(s.value("dem_slicer/zFactor")))
             self.renderLines.setChecked(
-                True if s.value("dem_slicer/renderLines") else False
+                True if s.value("dem_slicer/renderLines") == 'true' else False
             )
             self.renderPolygons.setChecked(
-                True if s.value("dem_slicer/renderPolygons") else False
+                True if s.value("dem_slicer/renderPolygons") == 'true' else False
             )
             self.renderRidges.setChecked(
-                True if s.value("dem_slicer/renderRidges") else False
+                True if s.value("dem_slicer/renderRidges") == 'true' else False
             )
             self.renderCompass.setChecked(
-                True if s.value("dem_slicer/renderCompass") else False
+                True if s.value("dem_slicer/renderCompass") == 'true' else False
             )
             self.renderSource.setChecked(
-                True if s.value("dem_slicer/renderSource") else False
+                True if s.value("dem_slicer/renderSource") == 'true' else False
             )
 
             for p in self.mt.ALL_POINTS:

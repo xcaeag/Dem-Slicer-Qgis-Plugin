@@ -17,16 +17,141 @@
    <layout class="QGridLayout" name="gridLayout">
     <item row="1" column="0">
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="11" column="0">
-       <widget class="QLabel" name="zShiftLabel">
+      <item row="15" column="0">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QLabel" name="alert">
+          <property name="styleSheet">
+           <string notr="true">color: rgb(255, 119, 0);</string>
+          </property>
+          <property name="text">
+           <string>xxxxxxxxxxxxxx</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="toSmooth">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="toolTip">
+           <string>smooth lines</string>
+          </property>
+          <property name="text">
+           <string>smooth</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="renderSource">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="toolTip">
+           <string>render source points with z attribute (be careful, it can be bulky)</string>
+          </property>
+          <property name="text">
+           <string>render source points</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item row="13" column="1">
+       <widget class="QSpinBox" name="elevation">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>-100000</number>
+        </property>
+        <property name="maximum">
+         <number>100000</number>
+        </property>
+        <property name="singleStep">
+         <number>50</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="rasterList">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="1">
+       <widget class="QDoubleSpinBox" name="xStep">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>0</number>
+        </property>
+        <property name="minimum">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>999999.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="19" column="1">
+       <widget class="QPushButton" name="btnBuild">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="text">
-         <string>Z shift</string>
+         <string>Build</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="rasterListLabel">
+        <property name="text">
+         <string>DEM layer</string>
         </property>
         <property name="buddy">
-         <cstring>zShift</cstring>
+         <cstring>rasterList</cstring>
         </property>
-        <property name="singleStep" stdset="0">
-         <number>10</number>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="lineCountLabel">
+        <property name="text">
+         <string>Line count</string>
+        </property>
+        <property name="buddy">
+         <cstring>lineCount</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QToolButton" name="reset">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="toolTip">
+         <string>Reset zone</string>
+        </property>
+        <property name="text">
+         <string>r</string>
         </property>
        </widget>
       </item>
@@ -58,28 +183,73 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QToolButton" name="btnHelp">
+          <property name="toolTip">
+           <string>Show online help</string>
+          </property>
+          <property name="text">
+           <string>?</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
-      <item row="13" column="0">
-       <widget class="QLabel" name="labelElevation">
-        <property name="text">
-         <string>Obs :   +</string>
-        </property>
-        <property name="buddy">
-         <cstring>elevation</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QToolButton" name="reset">
+      <item row="4" column="1">
+       <widget class="QSpinBox" name="lineCount">
         <property name="enabled">
          <bool>false</bool>
         </property>
-        <property name="toolTip">
-         <string>Reset zone</string>
+        <property name="minimum">
+         <number>3</number>
         </property>
+        <property name="maximum">
+         <number>999</number>
+        </property>
+        <property name="value">
+         <number>10</number>
+        </property>
+       </widget>
+      </item>
+      <item row="11" column="1">
+       <widget class="QDoubleSpinBox" name="zShift">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>0</number>
+        </property>
+        <property name="minimum">
+         <double>-9999.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>99999.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>50.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0">
+       <widget class="QLabel" name="xStepLabel">
         <property name="text">
-         <string>r</string>
+         <string>X Step</string>
+        </property>
+        <property name="buddy">
+         <cstring>xStep</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="12" column="0">
+       <widget class="QLabel" name="zFactorLabel">
+        <property name="text">
+         <string>Z exageration</string>
+        </property>
+        <property name="buddy">
+         <cstring>zFactor</cstring>
         </property>
        </widget>
       </item>
@@ -146,58 +316,30 @@
         </item>
        </layout>
       </item>
-      <item row="2" column="1">
-       <widget class="QComboBox" name="rasterList">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="14" column="1">
-       <widget class="QSpinBox" name="base">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>-99999</number>
-        </property>
-        <property name="maximum">
-         <number>99999</number>
-        </property>
-        <property name="singleStep">
-         <number>50</number>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="0">
-       <widget class="QLabel" name="xStepLabel">
+      <item row="13" column="0">
+       <widget class="QLabel" name="labelElevation">
         <property name="text">
-         <string>X Step</string>
+         <string>Obs :   +</string>
         </property>
         <property name="buddy">
-         <cstring>xStep</cstring>
+         <cstring>elevation</cstring>
         </property>
        </widget>
       </item>
-      <item row="11" column="1">
-       <widget class="QDoubleSpinBox" name="zShift">
-        <property name="enabled">
-         <bool>false</bool>
+      <item row="8" column="1">
+       <widget class="Line" name="line_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
         </property>
-        <property name="decimals">
-         <number>0</number>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="poiListLabel">
+        <property name="text">
+         <string>Ornamentation layer</string>
         </property>
-        <property name="minimum">
-         <double>-9999.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>99999.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>50.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>0.000000000000000</double>
+        <property name="buddy">
+         <cstring>poiList</cstring>
         </property>
        </widget>
       </item>
@@ -208,9 +350,25 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
-       <widget class="QComboBox" name="poiList">
+      <item row="14" column="0">
+       <widget class="QLabel" name="labelBase">
+        <property name="text">
+         <string>base height</string>
+        </property>
+        <property name="buddy">
+         <cstring>base</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QCheckBox" name="parallelView">
         <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Orthogonal view</string>
+        </property>
+        <property name="checked">
          <bool>false</bool>
         </property>
        </widget>
@@ -234,142 +392,16 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="rasterListLabel">
+      <item row="11" column="0">
+       <widget class="QLabel" name="zShiftLabel">
         <property name="text">
-         <string>DEM layer</string>
+         <string>Z shift</string>
         </property>
         <property name="buddy">
-         <cstring>rasterList</cstring>
+         <cstring>zShift</cstring>
         </property>
-       </widget>
-      </item>
-      <item row="8" column="1">
-       <widget class="Line" name="line_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QSpinBox" name="lineCount">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>3</number>
-        </property>
-        <property name="maximum">
-         <number>999</number>
-        </property>
-        <property name="value">
+        <property name="singleStep" stdset="0">
          <number>10</number>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QCheckBox" name="parallelView">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string>Orthogonal view</string>
-        </property>
-        <property name="checked">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="15" column="0">
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <item>
-         <widget class="QLabel" name="alert">
-          <property name="styleSheet">
-           <string notr="true">color: rgb(255, 119, 0);</string>
-          </property>
-          <property name="text">
-           <string>xxxxxxxxxxxxxx</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="toSmooth">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="toolTip">
-           <string>smooth lines</string>
-          </property>
-          <property name="text">
-           <string>smooth</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="renderSource">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="toolTip">
-           <string>render source points with z attribute (be careful, it can be bulky)</string>
-          </property>
-          <property name="text">
-           <string>render source points</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item row="12" column="0">
-       <widget class="QLabel" name="zFactorLabel">
-        <property name="text">
-         <string>Z exageration</string>
-        </property>
-        <property name="buddy">
-         <cstring>zFactor</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="14" column="0">
-       <widget class="QLabel" name="labelBase">
-        <property name="text">
-         <string>base height</string>
-        </property>
-        <property name="buddy">
-         <cstring>base</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="poiListLabel">
-        <property name="text">
-         <string>Ornamentation layer</string>
-        </property>
-        <property name="buddy">
-         <cstring>poiList</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="lineCountLabel">
-        <property name="text">
-         <string>Line count</string>
-        </property>
-        <property name="buddy">
-         <cstring>lineCount</cstring>
         </property>
        </widget>
       </item>
@@ -380,48 +412,26 @@
         </property>
        </widget>
       </item>
-      <item row="13" column="1">
-       <widget class="QSpinBox" name="elevation">
+      <item row="14" column="1">
+       <widget class="QSpinBox" name="base">
         <property name="enabled">
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>-100000</number>
+         <number>-99999</number>
         </property>
         <property name="maximum">
-         <number>100000</number>
+         <number>99999</number>
         </property>
         <property name="singleStep">
          <number>50</number>
         </property>
        </widget>
       </item>
-      <item row="19" column="1">
-       <widget class="QPushButton" name="btnBuild">
+      <item row="3" column="1">
+       <widget class="QComboBox" name="poiList">
         <property name="enabled">
          <bool>false</bool>
-        </property>
-        <property name="text">
-         <string>Build</string>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="1">
-       <widget class="QDoubleSpinBox" name="xStep">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="decimals">
-         <number>0</number>
-        </property>
-        <property name="minimum">
-         <double>1.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>999999.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>1.000000000000000</double>
         </property>
        </widget>
       </item>
