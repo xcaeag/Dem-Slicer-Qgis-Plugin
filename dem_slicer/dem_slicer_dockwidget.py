@@ -1030,7 +1030,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             pass
 
     def on_btnHelp_released(self):
-        tools.showPluginHelp(filename="./help/index")
+        tools.showPluginHelp(filename="help/index")
 
     def on_btnSave_released(self):
         fileName, _ = QFileDialog.getSaveFileName(
