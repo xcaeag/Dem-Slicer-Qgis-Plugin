@@ -58,7 +58,7 @@ Choice of the zone (use of the handles), selection of the layer which carries th
 
 Default view : the profiles follow arcs of an iso-distance to the observer.
 
-![Basic use](dem_slicer/help/dem-demo-1.gif)
+![Basic use](doc/dem-demo-1.gif)
 
 ### Ergonomics
 
@@ -66,11 +66,11 @@ The different handles allow you to size, position the cuts and the final renderi
 
 The "sample" profiles are drawn immediately.
 
-![ergonomie-fr](dem_slicer/help/ergonomie-en.png)
+![ergonomie-fr](doc/ergonomie-en.png)
 
 ### Orthogonal view
 
-![Vue ortho](dem_slicer/help/dem-demo-2.gif)
+![Vue ortho](doc/dem-demo-2.gif)
 
 ### Ornementations
 
@@ -78,7 +78,7 @@ The selected point layer will be 'projected' on the profiles. An attribute indic
 
 A line layer or polygons will be cut by the profile lines, each vertex replaced in altitude. Result often badly done and very time consuming. Please note: cancellation is not possible, test on small data set.
 
-![P.O.I.](dem_slicer/help/dem-demo-3.gif)
+![P.O.I.](doc/dem-demo-3.gif)
 
 ## The layers produced
 
@@ -87,14 +87,14 @@ Attributes :
 
     "demslicer_cutid" - line number. Zero from the front.
 
-![layer line](dem_slicer/help/ex_line.png)
+![layer line](doc/ex_line.png)
 
 ### Polygons
 Attributes :
 
     "demslicer_cutid" - polygone number.
 
-![layer polygon](dem_slicer/help/ex_poly.png)
+![layer polygon](doc/ex_poly.png)
 
 ### Ridges
 Attributes :
@@ -102,7 +102,7 @@ Attributes :
     "demslicer_gaz" - number of profiles that this crest hides
     "demslicer_cutid" - 'depth' of the ridge (0 = front...)
 
-![layer ridge](dem_slicer/help/ex_ridge.png)
+![layer ridge](doc/ex_ridge.png)
 
 ### Ornementation (points)
 Attributes (added to the attributes of the original layer) :
@@ -113,39 +113,39 @@ Attributes (added to the attributes of the original layer) :
     "demslicer_visi" - visibility in the cutting series (< 1: hidden, 1: visible)
     "demslicer_azimuth" - azimuth from observer
 
-![layer POI](dem_slicer/help/ex_ornement.png)
+![layer POI](doc/ex_ornement.png)
 
 ### Compass 
 
 In perspective mode, possibility of producing a 'compass' layer to help localization, azimuth in x, angle of sight in relation to the horizontal in y.
 
-![boussole](dem_slicer/help/compass.png)
+![boussole](doc/compass.png)
 
 ## The parameters in detail
 
 linecount : it is simply the number of profiles (sections) generated.
 
-![linecount](dem_slicer/help/dem-demo-linecount.gif)
+![linecount](doc/dem-demo-linecount.gif)
 
 xStep : distance between two altitude measurements, along the profiles.
 
-![xstep](dem_slicer/help/dem-demo-xstep.gif)
+![xstep](doc/dem-demo-xstep.gif)
 
 zShift : vertical offset of the profiles. Makes the cuts in the background more visible. 'Aerial view' effect (orthogonal mode only).
 
-![zshift](dem_slicer/help/dem-demo-zshift.gif)
+![zshift](doc/dem-demo-zshift.gif)
 
 zFactor : accentuation of the relief.
 
-![zfactor](dem_slicer/help/dem-demo-zfactor.gif)
+![zfactor](doc/dem-demo-zfactor.gif)
 
 elevation : Altitude of the observer relative to the ground. Like 'zShift', influences the vertical offset of the sections, more faithful to reality in orthogonal mode.
 
-![elevation](dem_slicer/help/dem-demo-elevation.gif)
+![elevation](doc/dem-demo-elevation.gif)
 
 Base height.
 
-![elevation](dem_slicer/help/dem-demo-base.gif)
+![elevation](doc/dem-demo-base.gif)
 
 ## The styles
 
@@ -155,14 +155,14 @@ The attributes carried by the geometries can be used to adjust styles. For examp
 
     scale_linear( coalesce( "demslicer_gaz", maximum("demslicer_gaz")/3) , 0, maximum("demslicer_gaz"), 0.05, 0.8)
 
-![style polygon](dem_slicer/help/ex_polygon.png)
+![style polygon](doc/ex_polygon.png)
 
-![style polygon](dem_slicer/help/ex_texture.png)
+![style polygon](doc/ex_texture.png)
 
 
 # D.E.M. Slicer (fr)
 
-![ex1](dem_slicer/help/all.png)
+![ex1](doc/all.png)
 
 Il s'agit d'un outil simple de découpe (en tranches !) de Modèle numérique de terrain (MNT), pour produire de belles images à destination des amoureux de reliefs.
 
@@ -183,7 +183,7 @@ La projection de points (sommets par exemple), de lignes (rivières ?), de polyg
 ### Un fonctionnement basique.
 Choix de la zone (utilisation des poignées), sélection de la couche qui porte les altitudes, ajustement de quelques paramètres et résultats  :
 
-![Démo simple](dem_slicer/help/dem-demo-1.gif)
+![Démo simple](doc/dem-demo-1.gif)
 
 ### Ergonomie
 
@@ -191,13 +191,13 @@ Les différentes poignées permettent de dimensionner, positionner les coupes et
 
 Les profils "échantillons" se dessinent immédiatement.
 
-![ergonomie-fr](dem_slicer/help/ergonomie-fr.png)
+![ergonomie-fr](doc/ergonomie-fr.png)
 
 
 ### La vue orthogonale
 Les coupes suivent alors des lignes droites, l'observateur n'est plus le "point bleu" mais se déplace latéralement. Les options de décalage des profils peuvent simuler une prise d'altitude.
 
-![Vue ortho](dem_slicer/help/dem-demo-2.gif)
+![Vue ortho](doc/dem-demo-2.gif)
 
 ### Ornementations
 
@@ -205,7 +205,7 @@ La couche de points choisie sera 'projetée' sur les coupes. Un attribut indique
 
 Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet de la géométrie replacé en altitude. Résultat souvent imparfait. Attention : annulation impossible, faire des tests sur petit jeu de données.
 
-![P.O.I.](dem_slicer/help/dem-demo-3.gif)
+![P.O.I.](doc/dem-demo-3.gif)
 
 ## Les couches produites
 
@@ -214,14 +214,14 @@ Attributs :
 
     "demslicer_cutid" - numéro de ligne (profondeur), le zéro plus proche de l'observateur.
 
-![layer line](dem_slicer/help/ex_line.png)
+![layer line](doc/ex_line.png)
 
 ### Polygones
 Attributs :
 
     "demslicer_cutid" - numéro du polygone (profondeur), le zéro plus proche de l'observateur.
 
-![layer polygon](dem_slicer/help/ex_poly.png)
+![layer polygon](doc/ex_poly.png)
 
 ### Crêtes
 Attributs :
@@ -229,7 +229,7 @@ Attributs :
     "demslicer_gaz" - nombre de profils que cette crête cache.
     "demslicer_cutid" - 'profondeur' de la crête (0 = proche...)
 
-![layer ridge](dem_slicer/help/ex_ridge.png)
+![layer ridge](doc/ex_ridge.png)
 
 ### Ornementation (points)
 Attributs (ajoutés aux attributs de la couche originale) :
@@ -240,40 +240,40 @@ Attributs (ajoutés aux attributs de la couche originale) :
     "demslicer_visi" - visibilité dans la série de coupe (< 1 : masqué, 1 : visible)
     "demslicer_azimuth"  - azimuth du point (visée à la boussole du point)
 
-![layer POI](dem_slicer/help/ex_ornement.png)
+![layer POI](doc/ex_ornement.png)
 
 ### Boussole
 
 En mode perspective, possibilité de produire une couche 'boussole' d'aide à la localisation, azimuth en x, angle de visée par rapport à l'horizontale en y.
 
-![boussole](dem_slicer/help/compass.png)
+![boussole](doc/compass.png)
 
 ## Les paramètres en détail
 
 Nombre de profils : c'est tout simplement le nombre de coupes générées.
 
-![linecount](dem_slicer/help/dem-demo-linecount.gif)
+![linecount](doc/dem-demo-linecount.gif)
 
 Ecart entre deux mesures d'altitude : distance entre deux points, le long des profils.
 
-![xstep](dem_slicer/help/dem-demo-xstep.gif)
+![xstep](doc/dem-demo-xstep.gif)
 
 Décalage des profils : décalage vertical des coupes. Rend plus visible les coupes qui sont en arrière plan. Effet 'vue aérienne', en mode orthogonal.
 
-![zshift](dem_slicer/help/dem-demo-zshift.gif)
+![zshift](doc/dem-demo-zshift.gif)
 
 Accentuation du relief : Exagération du relief (multiplication).
 
-![zfactor](dem_slicer/help/dem-demo-zfactor.gif)
+![zfactor](doc/dem-demo-zfactor.gif)
 
 Obs : Altitude de l'observateur par rapport au sol. 
 En mode orthogonal, un décalage vertical des coupes, selon la distance à l'observateur simule la prise d'altitude.
 
-![elevation](dem_slicer/help/dem-demo-elevation.gif)
+![elevation](doc/dem-demo-elevation.gif)
 
 Base : hauteur de la 'jupe'.
 
-![elevation](dem_slicer/help/dem-demo-base.gif)
+![elevation](doc/dem-demo-base.gif)
 
 
 ## Les styles
