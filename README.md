@@ -73,6 +73,7 @@ The "sample" profiles are drawn immediately.
 ### Orthogonal view
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-2.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-2.gif
 
 ### Ornementations
 
@@ -81,6 +82,7 @@ The selected point layer will be 'projected' on the profiles. An attribute indic
 A line layer or polygons will be cut by the profile lines, each vertex replaced in altitude. Result often badly done and very time consuming. Please note: cancellation is not possible, test on small data set.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-3.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-3.gif
 
 ## The layers produced
 
@@ -128,26 +130,32 @@ In perspective mode, possibility of producing a 'compass' layer to help localiza
 linecount : it is simply the number of profiles (sections) generated.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-linecount.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-linecount.gif
 
 xStep : distance between two altitude measurements, along the profiles.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-xstep.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-xstep.gif
 
 zShift : vertical offset of the profiles. Makes the cuts in the background more visible. 'Aerial view' effect (orthogonal mode only).
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-zshift.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-zshift.gif
 
 zFactor : accentuation of the relief.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-zfactor.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-zfactor.gif
 
 elevation : Altitude of the observer relative to the ground. Like 'zShift', influences the vertical offset of the sections, more faithful to reality in orthogonal mode.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-elevation.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-elevation.gif
 
 Base height.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-base.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-base.gif
 
 ## The styles
 
@@ -186,6 +194,7 @@ La projection de points (sommets par exemple), de lignes (rivières ?), de polyg
 Choix de la zone (utilisation des poignées), sélection de la couche qui porte les altitudes, ajustement de quelques paramètres et résultats  :
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-1.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-1.gif
 
 ### Ergonomie
 
@@ -200,6 +209,7 @@ Les profils "échantillons" se dessinent immédiatement.
 Les coupes suivent alors des lignes droites, l'observateur n'est plus le "point bleu" mais se déplace latéralement. Les options de décalage des profils peuvent simuler une prise d'altitude.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-2.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-2.gif
 
 ### Ornementations
 
@@ -208,6 +218,7 @@ La couche de points choisie sera 'projetée' sur les coupes. Un attribut indique
 Une couche de ligne ou polygones sera découpée par les lignes de profils, chaque sommet de la géométrie replacé en altitude. Résultat souvent imparfait. Attention : annulation impossible, faire des tests sur petit jeu de données.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-3.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-3.gif
 
 ## Les couches produites
 
@@ -255,27 +266,33 @@ En mode perspective, possibilité de produire une couche 'boussole' d'aide à la
 Nombre de profils : c'est tout simplement le nombre de coupes générées.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-linecount.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-linecount.gif
 
 Ecart entre deux mesures d'altitude : distance entre deux points, le long des profils.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-xstep.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-xstep.gif
 
 Décalage des profils : décalage vertical des coupes. Rend plus visible les coupes qui sont en arrière plan. Effet 'vue aérienne', en mode orthogonal.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-zshift.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-zshift.gif
 
 Accentuation du relief : Exagération du relief (multiplication).
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-zfactor.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-zfactor.gif
 
 Obs : Altitude de l'observateur par rapport au sol. 
 En mode orthogonal, un décalage vertical des coupes, selon la distance à l'observateur simule la prise d'altitude.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-elevation.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-elevation.gif
 
 Base : hauteur de la 'jupe'.
 
 <img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-base.gif">
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-base.gif
 
 
 ## Les styles
