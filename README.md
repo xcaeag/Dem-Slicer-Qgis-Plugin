@@ -58,7 +58,8 @@ Choice of the zone (use of the handles), selection of the layer which carries th
 
 Default view : the profiles follow arcs of an iso-distance to the observer.
 
-![Basic use](https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-1.gif)
+<img src="https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-1.gif" width="256" height="256" >
+https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin/raw/master/doc/dem-demo-1.gif
 
 ### Ergonomics
 
