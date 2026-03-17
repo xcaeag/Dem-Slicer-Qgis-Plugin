@@ -9,4 +9,5 @@ dem_slicer/deploy.sh
 textures/2020-*
 textures/scan-*
 textures/2020.*
-dem_slicer.0.4.zip
+*.zip
+pyqt5_to_pyqt6.py
