@@ -100,8 +100,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           qgis-plugin-ci package latest \
-            --allow-uncommitted-changes \
-            --plugin-repo-url $(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.html_url')
+            --allow-uncommitted-changes
+            
+        # --plugin-repo-url $(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.html_url')
 
       - name:
         uses: actions/upload-artifact@v7
