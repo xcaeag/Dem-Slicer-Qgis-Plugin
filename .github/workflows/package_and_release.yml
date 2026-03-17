@@ -46,7 +46,7 @@ jobs:
           python3 -m pip install -U pyqt5-tools
 
       - name: Update translations
-        run: pylupdate5 -noobsolete -verbose ${{ env.PROJECT_FOLDER }}/resources/i18n/plugin_translation.pro
+        run: pylupdate5 -noobsolete -verbose ${{ env.PROJECT_FOLDER }}/plugin_translation.pro
 
       - name: Compile translations
         run: lrelease ${{ env.PROJECT_FOLDER }}/i18n/*.ts
