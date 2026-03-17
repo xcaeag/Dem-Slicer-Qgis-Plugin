@@ -19,10 +19,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-
-TODO : compass : grid
-TODO : poi - azimuth en mode ortho
-TODO : attributs : remplacer num+prof par cutid
 """
 
 import os
@@ -497,7 +493,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def buildSlices(self):
 
         try:
-            QgsApplication.setOverrideCursor(Qt.WaitCursor)
+            QgsApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
             self.mt.rebuildCuttingLines(False)
 
             # initial bbox ... lines
@@ -767,7 +763,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                                 azimuth = self.mt.azimuth('Y', 'M')
                             else:
                                 azimuth = self.mt.pointXY('Y').azimuth(poiPointXY)
-                            
+
                             pt = QgsGeometry.fromPointXY(QgsPointXY(newX, newY))
                             visi, _ = self.getVisibility(pt, aPolys, prof)
                             fet0 = QgsFeature()
@@ -1036,8 +1032,17 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         fileName, _ = QFileDialog.getSaveFileName(
             self, self.tr("Save parameters"), "", self.tr("Ini files (*.ini)")
         )
+        self.info(fileName)
         if fileName:
-            s = QSettings(fileName, QSettings.IniFormat)
+            if not fileName.lower().endswith(".ini"):
+                fileName = fileName + ".ini"
+
+            try:
+                s = QSettings(fileName, QSettings.IniFormat)
+            except AttributeError:
+                # PyQt6
+                s = QSettings(fileName, QSettings.Format.IniFormat)
+
             for p in self.mt.ALL_POINTS:
                 s.setValue("dem_slicer/{}x".format(p), self.mt.x(p))
                 s.setValue("dem_slicer/{}y".format(p), self.mt.y(p))
@@ -1069,7 +1074,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self, self.tr("Load parameters"), "", self.tr("Ini files (*.ini)")
         )
         if fileName:
-            s = QSettings(fileName, QSettings.IniFormat)
+            try:
+                s = QSettings(fileName, QSettings.IniFormat)
+            except AttributeError:
+                # PyQt6
+                s = QSettings(fileName, QSettings.Format.IniFormat)
+
             for p in self.mt.ALL_POINTS:
                 self.mt.points[p].setXY(
                     float(s.value("dem_slicer/{}x".format(p))),
@@ -1100,19 +1110,36 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.zShift.setValue(float(s.value("dem_slicer/zShift")))
             self.zFactor.setValue(float(s.value("dem_slicer/zFactor")))
             self.renderLines.setChecked(
-                True if s.value("dem_slicer/renderLines") == 'true' else False
+                True
+                if s.value("dem_slicer/renderLines") == "true"
+                or s.value("dem_slicer/renderLines")
+                else False
             )
+            # self.info(s.value("dem_slicer/renderPolygons"))
+
             self.renderPolygons.setChecked(
-                True if s.value("dem_slicer/renderPolygons") == 'true' else False
+                True
+                if s.value("dem_slicer/renderPolygons") == "true"
+                or s.value("dem_slicer/renderPolygons")
+                else False
             )
             self.renderRidges.setChecked(
-                True if s.value("dem_slicer/renderRidges") == 'true' else False
+                True
+                if s.value("dem_slicer/renderRidges") == "true"
+                or s.value("dem_slicer/renderRidges")
+                else False
             )
             self.renderCompass.setChecked(
-                True if s.value("dem_slicer/renderCompass") == 'true' else False
+                True
+                if s.value("dem_slicer/renderCompass") == "true"
+                or s.value("dem_slicer/renderCompass")
+                else False
             )
             self.renderSource.setChecked(
-                True if s.value("dem_slicer/renderSource") == 'true' else False
+                True
+                if s.value("dem_slicer/renderSource") == "true"
+                or s.value("dem_slicer/renderSource")
+                else False
             )
 
             for p in self.mt.ALL_POINTS:
@@ -1220,7 +1247,7 @@ class MapTool(QgsMapTool):
     ALL_POINTS_R = ('X', 'A', 'A2', 'B', 'B2', 'C', 'C2', 'D', 'D2',
                     'L', 'Y', 'L2', 'M', 'peak', 'H')
 
-    def getRubber(self, typ, color=Qt.red, w=6):
+    def getRubber(self, typ, color=QColor(200, 70, 70, 150), w=6):
         r = QgsRubberBand(self.canvas, typ)
         r.setStrokeColor(color)
         r.setWidth(w)
@@ -1328,9 +1355,9 @@ class MapTool(QgsMapTool):
 
         """ tests
         for p in ('A', 'B', 'C', 'D'):
-            self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry, color=Qt.green, w=2)
+            self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry, color=QColor(70, 200, 70, 150), w=2)
         for p in ('A2', 'C2', 'D2'):
-            self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry, color=Qt.darkGray, w=2)"""
+            self.rubbers[p] = self.getRubber(QgsWkbTypes.PointGeometry, color=QColor(70, 70, 70, 150), w=2)"""
 
         # last line (blue)
         self.rubbers['horizon'].setStrokeColor(QColor(70, 100, 255, 200))
@@ -1348,13 +1375,13 @@ class MapTool(QgsMapTool):
         self.rubbers['box'].setStrokeColor(QColor(70, 100, 255, 200))
         self.rubbers['box'].setWidth(3)
         # view angle
-        self.rubbers['foc'].setStrokeColor(Qt.blue)
+        self.rubbers["foc"].setStrokeColor(QColor(70, 70, 200, 150))
         self.rubbers['foc'].setWidth(1)
         # cutting lines
         self.rubbers['lines'].setStrokeColor(QColor(40, 180, 30, 200))
         self.rubbers['lines'].setWidth(2)
         # ROTATE node (eye)
-        self.rubbers['Y'].setStrokeColor(Qt.blue)
+        self.rubbers["Y"].setStrokeColor(QColor(70, 70, 200, 150))
         # PEAK
         self.rubbers['peak'].setStrokeColor(QColor(255, 239, 15, 200))
 

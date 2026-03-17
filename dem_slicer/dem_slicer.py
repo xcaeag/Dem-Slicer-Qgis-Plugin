@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, qVersion
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 
@@ -69,6 +69,11 @@ class DemSlicer:
 
         self.pluginIsActive = False
         self.dockwidget = None
+
+        if qVersion().split(".")[0] == "6":
+            self.defaultArea = Qt.DockWidgetArea.LeftDockWidgetArea.value
+        else:
+            self.defaultArea = Qt.DockWidgetArea.LeftDockWidgetArea
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -201,5 +206,11 @@ class DemSlicer:
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
 
             # show the dockwidget
-            self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwidget)
+            if qVersion().split(".")[0] == "6":
+                self.iface.addDockWidget(
+                    Qt.DockWidgetArea(self.defaultArea), self.dockwidget
+                )
+            else:
+                self.iface.addDockWidget(self.defaultArea, self.dockwidget)
+
             self.dockwidget.show()

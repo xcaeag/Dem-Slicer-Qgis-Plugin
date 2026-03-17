@@ -4,9 +4,13 @@
 
 [general]
 name=D.E.M. Slicer
-qgisMinimumVersion=3.20
+qgisMinimumVersion=3.34
+qgisMaximumVersion=4.98
+
 description=D.E.M. slicer, an 'artistic' relief cutting tool
-version=0.5.0-dev
+version=0.5.1-dev
+supportsQt6=True
+
 author=Xavier Culos
 email=xavier.culos@gmail.com
 
@@ -20,7 +24,8 @@ repository=https://github.com/xcaeag/Dem-Slicer-Qgis-Plugin
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog=0.4.1 fix POI shift
+changelog=0.5.0 QGis 4.0 Compatible
+    0.4.1 fix POI shift
     0.4 improved ergonomics
     0.3 better handling of perspective mode
     0.1 beginnings
