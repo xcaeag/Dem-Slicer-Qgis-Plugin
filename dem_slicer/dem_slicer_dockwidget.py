@@ -36,8 +36,9 @@ from qgis.PyQt.QtCore import (
     QTranslator,
     pyqtSignal,
     Qt,
-    QVariant,
     QSettings,
+    QMetaType,
+    QLocale,
 )
 from qgis.PyQt.QtGui import QColor
 from qgis.core import (
@@ -45,7 +46,8 @@ from qgis.core import (
     Qgis,
     QgsWkbTypes,
     QgsGeometry,
-    QgsPoint, QgsPointXY,
+    QgsPoint,
+    QgsPointXY,
     QgsLineString,
     QgsMessageLog,
     QgsProject,
@@ -58,6 +60,7 @@ from qgis.core import (
     QgsCoordinateTransform,
     QgsFeatureRequest,
     QgsRectangle,
+    QgsSettings,
 )
 
 from qgis.gui import QgsRubberBand, QgsMapTool
@@ -85,8 +88,10 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.mt = MapTool(self)
 
-        locale = QSettings().value("locale/userLocale")[0:2]
-        localePath = os.path.join(str(DIR_PLUGIN_ROOT / "i18n"), "{}.qm".format(locale))
+        locale = QgsSettings().value("locale/userLocale", QLocale().name())
+        localePath = os.path.join(
+            str(DIR_PLUGIN_ROOT / "i18n"), "{}.qm".format(locale[0:2])
+        )
         self.info(localePath)
 
         if os.path.exists(localePath):
@@ -340,9 +345,7 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def buildLayer(self, layer, aLinesOrPolys):
         layer.startEditing()
-        layer.dataProvider().addAttributes(
-            [QgsField("demslicer_cutid", QVariant.Int)]
-        )
+        layer.dataProvider().addAttributes([QgsField("demslicer_cutid", QMetaType.Int)])
         layer.updateFields()
         feats = []
         # croissant en partant du fond (ligne d'horizon vers premier profil)
@@ -384,7 +387,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     "memory",
                 )
                 vSource.startEditing()
-                vSource.dataProvider().addAttributes([QgsField("demslicer_cutid", QVariant.Int), QgsField("demslicer_z", QVariant.Int)])
+                vSource.dataProvider().addAttributes(
+                    [
+                        QgsField("demslicer_cutid", QMetaType.Int),
+                        QgsField("demslicer_z", QMetaType.Int),
+                    ]
+                )
                 vSource.updateFields()
                 feats = []
 
@@ -543,10 +551,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
                 compass.startEditing()
                 feats = []
-                compass.dataProvider().addAttributes([
-                    QgsField("demslicer_orientation", QVariant.String),
-                    QgsField("demslicer_azimuth", QVariant.Double)
-                ])
+                compass.dataProvider().addAttributes(
+                    [
+                        QgsField("demslicer_orientation", QMetaType.QString),
+                        QgsField("demslicer_azimuth", QMetaType.Double),
+                    ]
+                )
                 compass.updateFields()
                 for i, alpha in enumerate(range(round(self.mt.azimuthLeft), round(self.mt.azimuthRight))):
                     c = QgsPoint(
@@ -627,10 +637,12 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         "memory",
                     )
                     hLayer.startEditing()
-                    hLayer.dataProvider().addAttributes([
-                        QgsField("demslicer_cutid", QVariant.Int),
-                        QgsField("demslicer_gaz", QVariant.Int)
-                    ])
+                    hLayer.dataProvider().addAttributes(
+                        [
+                            QgsField("demslicer_cutid", QMetaType.Int),
+                            QgsField("demslicer_gaz", QMetaType.Int),
+                        ]
+                    )
                     hLayer.updateFields()
 
                     horizons = []
@@ -787,11 +799,19 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         layer.dataProvider().addAttributes(
                             poiLayer.dataProvider().fields().toList()
                             + [
-                                QgsField("demslicer_cutid", QVariant.Int),
-                                QgsField("demslicer_z", QVariant.Int),
-                                QgsField("demslicer_dist", QVariant.Double, "double", 4, 1),
-                                QgsField("demslicer_visi", QVariant.Int),
-                                QgsField("demslicer_azimuth", QVariant.Double, "double", 4, 1),
+                                QgsField("demslicer_cutid", QMetaType.Int),
+                                QgsField("demslicer_z", QMetaType.Int),
+                                QgsField(
+                                    "demslicer_dist", QMetaType.Double, "double", 4, 1
+                                ),
+                                QgsField("demslicer_visi", QMetaType.Int),
+                                QgsField(
+                                    "demslicer_azimuth",
+                                    QMetaType.Double,
+                                    "double",
+                                    4,
+                                    1,
+                                ),
                             ]
                         )
                         layer.dataProvider().setEncoding(poiLayer.dataProvider().encoding())
@@ -847,10 +867,11 @@ class DemSlicerDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     poiZLayer = tools.run("native:splitwithlines", poiZLayer, {'LINES': lCut})
                     self.setAlert(self.tr("projection 5/10"))
                     poiZLayer = tools.run("native:multiparttosingleparts", poiZLayer)
-                    poiZLayer.dataProvider().addAttributes([
-                            QgsField("demslicer_visi", QVariant.Int),
-                            QgsField("demslicer_cutid", QVariant.Int),
-                            # QgsField("demslicer_log", QVariant.String)
+                    poiZLayer.dataProvider().addAttributes(
+                        [
+                            QgsField("demslicer_visi", QMetaType.Int),
+                            QgsField("demslicer_cutid", QMetaType.Int),
+                            # QgsField("demslicer_log", QMetaType.QString)
                         ]
                     )
                     poiZLayer.updateFields()
@@ -1167,12 +1188,12 @@ class Point():
 
         A------H-------B         _----H----_
         |              |      A2              B2
-        |  S   X       L       \   S  X      L2
-        |              |        \           /                  ~~~~~~~~~~~~~~~~
-        D------M-------C         \ _--M--_ /        ->         ~~~~~~~~~~~~~~~~
-        \      |      /          D2   |   C2                   R ~~~~~~~~~~~~~~
-          \    d0   /              \  d0 /
-            \  |  /                 \ | /
+        |  S   X       L       *   S  X      L2
+        |              |        *           *                  ~~~~~~~~~~~~~~~~
+        D------M-------C         * _--M--_ *        ->         ~~~~~~~~~~~~~~~~
+        *      |      *          D2   |   C2                   R ~~~~~~~~~~~~~~
+          *    d0   *              *  d0 *
+            *  |  *                 * | *
                Y                      Y
 
     Les manipulations possibles :

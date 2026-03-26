@@ -26,7 +26,6 @@ from qgis.PyQt.QtWidgets import QAction
 
 # Initialize Qt resources from file resources.py
 from .__about__ import DIR_PLUGIN_ROOT
-from .resources import *
 
 # Import the code for the DockWidget
 from .dem_slicer_dockwidget import DemSlicerDockWidget
