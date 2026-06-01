@@ -2,7 +2,7 @@ name: "📦 Packaging & 🚀 Release"
 
 env:
   PROJECT_FOLDER: "dem_slicer"
-  PYTHON_VERSION: 3.9
+  PYTHON_VERSION: "3.10"
 
 on:
   push:
@@ -72,7 +72,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: 3.10
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
           cache-dependency-path: "requirements/packaging.txt"
 
@@ -129,7 +129,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: 3.10
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
           cache-dependency-path: "requirements/packaging.txt"
 
