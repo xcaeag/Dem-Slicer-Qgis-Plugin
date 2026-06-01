@@ -8,6 +8,6 @@ flake8-builtins>=3.1.0
 flake8-isort>=6
 flake8-qgis>=1
 
-pre-commit>=3.7,<5
+pre-commit>=4.6.0,<5
 
 qgis-plugin-ci==2.9.*
