@@ -2,7 +2,7 @@ name: "📦 Packaging & 🚀 Release"
 
 env:
   PROJECT_FOLDER: "dem_slicer"
-  PYTHON_VERSION: 3.10
+  PYTHON_VERSION: 3.9
 
 on:
   push:
